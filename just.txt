@@ -1,0 +1,118 @@
+Adding the Reverse_Gap_Count
+This I missed initially please make the necessary changes for showing in the UI and adding in the database as well
+
+I have updated the model to add the reverse_Gap_Count as well like this
+
+class FileStatus(Base):
+    __tablename__ = "file_status"
+
+    id = Column(Integer, primary_key=True, index=True)
+    Time = Column(DateTime, default=datetime.utcnow)
+    Status = Column(String)
+    Nex_Count = Column(String)
+    Sen_Coount = Column(String)
+    Gap_Count = Column(String)
+    Reverse_Gap_Count = Column(String)
+    Error = Column(String)
+    Nex_FileName = Column(String)
+    Sent_FileName = Column(String)
+    Gap_FileName = Column(String)
+    Reverse_Gap_FileName = Column(String)
+
+and the schemas also like this to add the reverse_Gap_Count as well like this
+
+class FileStatusCreate(BaseModel):
+    Status: Optional[str] = None
+    Nex_Count: Optional[str] = None
+    Sen_Coount: Optional[str] = None
+    Gap_Count: Optional[str] = None
+    Reverse_Gap_Count: Optional[str] = None
+    Error: Optional[str] = None
+    Nex_FileName: Optional[str] = None
+    Sent_FileName: Optional[str] = None
+    Gap_FileName: Optional[str] = None
+    Reverse_Gap_FileName: Optional[str]  = None
+
+also this API response also
+
+@app2.get("/firstrecord/")
+
+Response -     return {
+        "database_data": {
+            "id": record.id,
+            "Time": record.Time,
+            "Status": record.Status,
+            "Nex_Count": record.Nex_Count,
+            "Sen_Coount": record.Sen_Coount,
+            "Gap_Count": record.Gap_Count,
+            "Reverse_Gap_Count": record.Reverse_Gap_Count,
+            "Error": record.Error,
+            "Nex_FileName": record.Nex_FileName,
+            "Sent_FileName": record.Sent_FileName,
+            "Gap_FileName": record.Gap_FileName,
+            "Reverse_Gap_FileName": record.Reverse_Gap_FileName
+        },
+        "excel_data": {
+            "nex_file": read_excel_safe(record.Nex_FileName),
+            "sent_file": read_excel_safe(record.Sent_FileName),
+            "gap_file": read_excel_safe(record.Gap_FileName),
+            "reverse_gap_file": read_excel_safe(record.Reverse_Gap_FileName)
+        }
+        
+    }
+
+To add the Reverse_Gap_Count
+
+This I missed initially please make the necessary changes for showing in the UI and adding in the database as well
+
+Also these two APIs as well I added the Reverse_Gap_Count please make the changes in the UI if required
+
+@app2.get("/records/by-id/{record_id}")
+
+    return {
+        "database_data": {
+            "id": record.id,
+            "Time": record.Time,
+            "Status": record.Status,
+            "Nex_Count": record.Nex_Count,
+            "Sen_Coount": record.Sen_Coount,
+            "Gap_Count": record.Gap_Count,
+            "Reverse_Gap_Count": record.Reverse_Gap_Count,
+            "Error": record.Error,
+            "Nex_FileName": record.Nex_FileName,
+            "Sent_FileName": record.Sent_FileName,
+            "Gap_FileName": record.Gap_FileName,
+            "Reverse_Gap_FileName": record.Reverse_Gap_FileName
+        },
+        "excel_data": {
+            "nex_file": read_excel_safe(record.Nex_FileName),
+            "sent_file": read_excel_safe(record.Sent_FileName),
+            "gap_file": read_excel_safe(record.Gap_FileName),
+            "reverse_gap_file": read_excel_safe(record.Reverse_Gap_FileName)
+         }
+    }
+
+@app2.get("/records/by-time/")
+
+    return {
+        "database_data": {
+            "id": record.id,
+            "Time": record.Time,
+            "Status": record.Status,
+            "Nex_Count": record.Nex_Count,
+            "Sen_Coount": record.Sen_Coount,
+            "Gap_Count": record.Gap_Count,
+            "Reverse_Gap_Count": record.Reverse_Gap_Count,
+            "Error": record.Error,
+            "Nex_FileName": record.Nex_FileName,
+            "Sent_FileName": record.Sent_FileName,
+            "Gap_FileName": record.Gap_FileName,
+            "Reverse_Gap_FileName": record.Reverse_Gap_FileName
+        },
+        "excel_data": {
+            "nex_file": read_excel_safe(record.Nex_FileName),
+            "sent_file": read_excel_safe(record.Sent_FileName),
+            "gap_file": read_excel_safe(record.Gap_FileName),
+            "reverse_gap_file": read_excel_safe(record.Reverse_Gap_FileName)
+        }
+    }
