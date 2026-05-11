@@ -1,118 +1,81 @@
-Adding the Reverse_Gap_Count
-This I missed initially please make the necessary changes for showing in the UI and adding in the database as well
+i have added these APIs
 
-I have updated the model to add the reverse_Gap_Count as well like this
+@app.post("/owner-mapping")
+def add_owner_mapping(
+    payload: OwnerMappingCreate,
+    db=Depends(get_db)
+):
+    exists = db.query(OwnerMapping).filter(
+        OwnerMapping.owner_key == payload.owner_key
+    ).first()
 
-class FileStatus(Base):
-    __tablename__ = "file_status"
+    if exists:
+        raise HTTPException(status_code=400, detail="Owner key already exists")
 
-    id = Column(Integer, primary_key=True, index=True)
-    Time = Column(DateTime, default=datetime.utcnow)
-    Status = Column(String)
-    Nex_Count = Column(String)
-    Sen_Coount = Column(String)
-    Gap_Count = Column(String)
-    Reverse_Gap_Count = Column(String)
-    Error = Column(String)
-    Nex_FileName = Column(String)
-    Sent_FileName = Column(String)
-    Gap_FileName = Column(String)
-    Reverse_Gap_FileName = Column(String)
+    record = OwnerMapping(
+        owner_key=payload.owner_key,
+        to_emails=payload.to_emails,
+        cc_emails=payload.cc_emails
+    )
 
-and the schemas also like this to add the reverse_Gap_Count as well like this
+    db.add(record)
+    db.commit()
 
-class FileStatusCreate(BaseModel):
-    Status: Optional[str] = None
-    Nex_Count: Optional[str] = None
-    Sen_Coount: Optional[str] = None
-    Gap_Count: Optional[str] = None
-    Reverse_Gap_Count: Optional[str] = None
-    Error: Optional[str] = None
-    Nex_FileName: Optional[str] = None
-    Sent_FileName: Optional[str] = None
-    Gap_FileName: Optional[str] = None
-    Reverse_Gap_FileName: Optional[str]  = None
+    return {"message": "Owner mapping added successfully"}
 
-also this API response also
 
-@app2.get("/firstrecord/")
+@app.delete("/owner-mapping/{owner_key}")
+def delete_owner_mapping(owner_key: str, db=Depends(get_db)):
+    record = db.query(OwnerMapping).filter(
+        OwnerMapping.owner_key == owner_key
+    ).first()
 
-Response -     return {
-        "database_data": {
-            "id": record.id,
-            "Time": record.Time,
-            "Status": record.Status,
-            "Nex_Count": record.Nex_Count,
-            "Sen_Coount": record.Sen_Coount,
-            "Gap_Count": record.Gap_Count,
-            "Reverse_Gap_Count": record.Reverse_Gap_Count,
-            "Error": record.Error,
-            "Nex_FileName": record.Nex_FileName,
-            "Sent_FileName": record.Sent_FileName,
-            "Gap_FileName": record.Gap_FileName,
-            "Reverse_Gap_FileName": record.Reverse_Gap_FileName
-        },
-        "excel_data": {
-            "nex_file": read_excel_safe(record.Nex_FileName),
-            "sent_file": read_excel_safe(record.Sent_FileName),
-            "gap_file": read_excel_safe(record.Gap_FileName),
-            "reverse_gap_file": read_excel_safe(record.Reverse_Gap_FileName)
+    if not record:
+        raise HTTPException(status_code=404, detail="Owner key not found")
+
+    db.delete(record)
+    db.commit()
+
+    return {"message": "Owner mapping deleted"}
+
+
+@app.get("/owner-mapping", response_model=list[OwnerMappingResponse])
+def list_owner_mappings(db=Depends(get_db)):
+    records = db.query(OwnerMapping).all()
+
+    return [
+        {
+            "owner_key": r.owner_key,
+            "to_emails": r.to_emails,
+            "cc_emails": r.cc_emails
         }
-        
+        for r in records
+    ]
+MAIL_API_URL = os.getenv("MAIL_API_URL")
+
+@app.post("/send-vulnerability-sla-mails")
+async def send_vulnerability_sla_mails(db=Depends(get_db)):
+
+response 
+
+{
+  "message": "SLA alert mails processed",
+  "run_id": "6d53005b-0c26-4eb0-a15e-8b460f44779e",
+  "owners_notified": 1,
+  "results": [
+    {
+      "owner": "secops",
+      "mail_status": "sent",
+      "count": 7
     }
+  ]
+}
+I want to a section to configure the owner mappings with the above apis and also another section for for Notififying the owners through email with this API @app.post("/send-vulnerability-sla-mails")
+async def send_vulnerability_sla_mails(db=Depends(get_db)):
 
-To add the Reverse_Gap_Count
 
-This I missed initially please make the necessary changes for showing in the UI and adding in the database as well
 
-Also these two APIs as well I added the Reverse_Gap_Count please make the changes in the UI if required
 
-@app2.get("/records/by-id/{record_id}")
+I want to add a functionality where all the upload option will be moved to another section name admin where I can upload the files whenever changes are required except the nexpose raw data upload option and when I click process and polpulate each time I dont need to upload the data each time and also I want another button that will call these two APIs
 
-    return {
-        "database_data": {
-            "id": record.id,
-            "Time": record.Time,
-            "Status": record.Status,
-            "Nex_Count": record.Nex_Count,
-            "Sen_Coount": record.Sen_Coount,
-            "Gap_Count": record.Gap_Count,
-            "Reverse_Gap_Count": record.Reverse_Gap_Count,
-            "Error": record.Error,
-            "Nex_FileName": record.Nex_FileName,
-            "Sent_FileName": record.Sent_FileName,
-            "Gap_FileName": record.Gap_FileName,
-            "Reverse_Gap_FileName": record.Reverse_Gap_FileName
-        },
-        "excel_data": {
-            "nex_file": read_excel_safe(record.Nex_FileName),
-            "sent_file": read_excel_safe(record.Sent_FileName),
-            "gap_file": read_excel_safe(record.Gap_FileName),
-            "reverse_gap_file": read_excel_safe(record.Reverse_Gap_FileName)
-         }
-    }
-
-@app2.get("/records/by-time/")
-
-    return {
-        "database_data": {
-            "id": record.id,
-            "Time": record.Time,
-            "Status": record.Status,
-            "Nex_Count": record.Nex_Count,
-            "Sen_Coount": record.Sen_Coount,
-            "Gap_Count": record.Gap_Count,
-            "Reverse_Gap_Count": record.Reverse_Gap_Count,
-            "Error": record.Error,
-            "Nex_FileName": record.Nex_FileName,
-            "Sent_FileName": record.Sent_FileName,
-            "Gap_FileName": record.Gap_FileName,
-            "Reverse_Gap_FileName": record.Reverse_Gap_FileName
-        },
-        "excel_data": {
-            "nex_file": read_excel_safe(record.Nex_FileName),
-            "sent_file": read_excel_safe(record.Sent_FileName),
-            "gap_file": read_excel_safe(record.Gap_FileName),
-            "reverse_gap_file": read_excel_safe(record.Reverse_Gap_FileName)
-        }
-    }
+@app.post("/generate-nexpose-ip-excel"), @app.post("/nexpose/run-full-report/") instead of the process and populate data button running these two APIs
