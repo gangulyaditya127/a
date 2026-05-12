@@ -1,81 +1,205 @@
-i have added these APIs
+import sqlite3
+import os
+import time
 
-@app.post("/owner-mapping")
-def add_owner_mapping(
-    payload: OwnerMappingCreate,
-    db=Depends(get_db)
-):
-    exists = db.query(OwnerMapping).filter(
-        OwnerMapping.owner_key == payload.owner_key
-    ).first()
+# ─────────────────────────────────────────────
+# CONFIGURATION
+# ─────────────────────────────────────────────
 
-    if exists:
-        raise HTTPException(status_code=400, detail="Owner key already exists")
+INPUT_LOG_FILE = "Teardown"
+DB_FILE = "network_policies_optimized.db"
 
-    record = OwnerMapping(
-        owner_key=payload.owner_key,
-        to_emails=payload.to_emails,
-        cc_emails=payload.cc_emails
-    )
+# Number of DB inserts per commit
+BATCH_SIZE = 50000
 
-    db.add(record)
-    db.commit()
+# Number of unique keys to keep in memory
+# before flushing and clearing the set
+DEDUP_CHUNK_SIZE = 500000
 
-    return {"message": "Owner mapping added successfully"}
+# ─────────────────────────────────────────────
+# DATABASE SETUP
+# ─────────────────────────────────────────────
 
+def setup_database(db_path):
 
-@app.delete("/owner-mapping/{owner_key}")
-def delete_owner_mapping(owner_key: str, db=Depends(get_db)):
-    record = db.query(OwnerMapping).filter(
-        OwnerMapping.owner_key == owner_key
-    ).first()
+    conn = sqlite3.connect(db_path)
 
-    if not record:
-        raise HTTPException(status_code=404, detail="Owner key not found")
+    cursor = conn.cursor()
 
-    db.delete(record)
-    db.commit()
+    # PERFORMANCE PRAGMAS
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=OFF")
+    cursor.execute("PRAGMA temp_store=MEMORY")
+    cursor.execute("PRAGMA cache_size=-100000")
 
-    return {"message": "Owner mapping deleted"}
+    # NO UNIQUE CONSTRAINT
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS network_policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            src TEXT,
+            dst TEXT,
+            dst_port TEXT,
+            protocol TEXT
+        )
+    """)
 
+    conn.commit()
 
-@app.get("/owner-mapping", response_model=list[OwnerMappingResponse])
-def list_owner_mappings(db=Depends(get_db)):
-    records = db.query(OwnerMapping).all()
+    return conn
 
-    return [
-        {
-            "owner_key": r.owner_key,
-            "to_emails": r.to_emails,
-            "cc_emails": r.cc_emails
-        }
-        for r in records
-    ]
-MAIL_API_URL = os.getenv("MAIL_API_URL")
+# ─────────────────────────────────────────────
+# FAST PARSER
+# ─────────────────────────────────────────────
 
-@app.post("/send-vulnerability-sla-mails")
-async def send_vulnerability_sla_mails(db=Depends(get_db)):
+def parse_line(line):
 
-response 
+    # Fast precheck
+    if "Teardown" not in line:
+        return None
 
-{
-  "message": "SLA alert mails processed",
-  "run_id": "6d53005b-0c26-4eb0-a15e-8b460f44779e",
-  "owners_notified": 1,
-  "results": [
-    {
-      "owner": "secops",
-      "mail_status": "sent",
-      "count": 7
-    }
-  ]
-}
-I want to a section to configure the owner mappings with the above apis and also another section for for Notififying the owners through email with this API @app.post("/send-vulnerability-sla-mails")
-async def send_vulnerability_sla_mails(db=Depends(get_db)):
+    try:
+        parts = line.split()
 
+        # Example:
+        # Teardown TCP connection for inside:10.1.1.5/443 to outside:20.1.1.10/8080
 
+        protocol = parts[1]
 
+        src_part = parts[4]
+        dst_part = parts[6]
 
-I want to add a functionality where all the upload option will be moved to another section name admin where I can upload the files whenever changes are required except the nexpose raw data upload option and when I click process and polpulate each time I dont need to upload the data each time and also I want another button that will call these two APIs
+        # Extract source IP
+        src = src_part.split(":")[1].split("/")[0]
 
-@app.post("/generate-nexpose-ip-excel"), @app.post("/nexpose/run-full-report/") instead of the process and populate data button running these two APIs
+        # Extract destination IP
+        dst = dst_part.split(":")[1].split("/")[0]
+
+        # Extract destination port
+        dst_port = dst_part.split("/")[1]
+
+        return (src, dst, dst_port, protocol)
+
+    except Exception:
+        return None
+
+# ─────────────────────────────────────────────
+# MAIN PROCESSOR
+# ─────────────────────────────────────────────
+
+def process_log_file(log_file, db_conn):
+
+    cursor = db_conn.cursor()
+
+    total_lines = 0
+    total_matches = 0
+    total_inserts = 0
+    duplicates_skipped = 0
+
+    batch = []
+
+    # IN-MEMORY DEDUP
+    seen = set()
+
+    start_time = time.perf_counter()
+
+    print(f"\n⏳ Processing started...")
+    print(f"Input File : {log_file}")
+    print(f"Database   : {DB_FILE}\n")
+
+    with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+
+        for line in f:
+
+            total_lines += 1
+
+            parsed = parse_line(line)
+
+            if not parsed:
+                continue
+
+            total_matches += 1
+
+            # FAST HASH-BASED DEDUP
+            if parsed in seen:
+                duplicates_skipped += 1
+                continue
+
+            seen.add(parsed)
+
+            batch.append(parsed)
+
+            # FLUSH TO DB
+            if len(batch) >= BATCH_SIZE:
+
+                cursor.executemany("""
+                    INSERT INTO network_policies
+                    (src, dst, dst_port, protocol)
+                    VALUES (?, ?, ?, ?)
+                """, batch)
+
+                db_conn.commit()
+
+                total_inserts += len(batch)
+
+                batch.clear()
+
+            # MEMORY CONTROL
+            if len(seen) >= DEDUP_CHUNK_SIZE:
+                seen.clear()
+
+    # FINAL FLUSH
+    if batch:
+
+        cursor.executemany("""
+            INSERT INTO network_policies
+            (src, dst, dst_port, protocol)
+            VALUES (?, ?, ?, ?)
+        """, batch)
+
+        db_conn.commit()
+
+        total_inserts += len(batch)
+
+    end_time = time.perf_counter()
+
+    duration = end_time - start_time
+
+    # ─────────────────────────────────────────
+    # STATS
+    # ─────────────────────────────────────────
+
+    print("\n✅ Processing Complete")
+    print("-" * 50)
+
+    print(f"Total Lines Read       : {total_lines}")
+    print(f"Matching Log Entries   : {total_matches}")
+    print(f"Unique Policies Insert : {total_inserts}")
+    print(f"Duplicates Skipped     : {duplicates_skipped}")
+
+    print("-" * 50)
+
+    print(f"Execution Time         : {duration:.2f} seconds")
+
+    if duration > 0:
+        rate = total_lines / duration
+        print(f"Processing Rate        : {rate:,.0f} lines/sec")
+
+# ─────────────────────────────────────────────
+# ENTRY POINT
+# ─────────────────────────────────────────────
+
+if __name__ == "__main__":
+
+    if not os.path.exists(INPUT_LOG_FILE):
+
+        print(f"❌ File not found: {INPUT_LOG_FILE}")
+
+    else:
+
+        conn = setup_database(DB_FILE)
+
+        try:
+            process_log_file(INPUT_LOG_FILE, conn)
+
+        finally:
+            conn.close()
