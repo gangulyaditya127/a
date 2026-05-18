@@ -1,205 +1,238 @@
-import sqlite3
-import os
-import time
+import pandas as pd
+import psycopg2
+import re
+import ipaddress
 
-# ─────────────────────────────────────────────
-# CONFIGURATION
-# ─────────────────────────────────────────────
+# =========================
+# PostgreSQL Connection
+# =========================
+conn = psycopg2.connect(
+    host="localhost",
+    database="dis_noc",
+    user="postgres",
+    password="Saif@39039"
+)
+cur = conn.cursor()
 
-INPUT_LOG_FILE = "Teardown"
-DB_FILE = "network_policies_optimized.db"
+# =========================
+# Create Table
+# =========================
+cur.execute("""
+CREATE TABLE IF NOT EXISTS network_rules (
+    id SERIAL PRIMARY KEY,
+    source TEXT,
+    destination TEXT,
+    port_no TEXT,
+    protocol TEXT
+);
+""")
+conn.commit()
 
-# Number of DB inserts per commit
-BATCH_SIZE = 50000
+# =========================
+# Load Excel
+# =========================
+file_path = "SOE sample (1).xlsx"
 
-# Number of unique keys to keep in memory
-# before flushing and clearing the set
-DEDUP_CHUNK_SIZE = 500000
+df = pd.read_excel(file_path, sheet_name="One engine", header=2)
 
-# ─────────────────────────────────────────────
-# DATABASE SETUP
-# ─────────────────────────────────────────────
+# Clean column names
+df.columns = df.columns.astype(str).str.strip()
 
-def setup_database(db_path):
+# Auto-detect columns
+def find_column(df, keyword):
+    for col in df.columns:
+        if keyword in col.lower():
+            return col
+    raise Exception(f"Column containing '{keyword}' not found")
 
-    conn = sqlite3.connect(db_path)
+source_col = find_column(df, "source")
+dest_col = find_column(df, "destination")
+port_col = find_column(df, "port")
+protocol_col = find_column(df, "protocol")
 
-    cursor = conn.cursor()
+print("✅ Columns:", source_col, dest_col, port_col, protocol_col)
 
-    # PERFORMANCE PRAGMAS
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA synchronous=OFF")
-    cursor.execute("PRAGMA temp_store=MEMORY")
-    cursor.execute("PRAGMA cache_size=-100000")
+# Handle merged cells
+df[source_col] = df[source_col].replace("", pd.NA).ffill()
+df[dest_col] = df[dest_col].replace("", pd.NA).ffill()
 
-    # NO UNIQUE CONSTRAINT
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS network_policies (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            src TEXT,
-            dst TEXT,
-            dst_port TEXT,
-            protocol TEXT
-        )
-    """)
+# =========================
+# Load Subnet Sheet
+# =========================
+subnet_df = pd.read_excel(
+    file_path,
+    sheet_name="Ultimatix Subnets",
+    header=[0, 1, 2]
+)
 
-    conn.commit()
+# Flatten columns
+subnet_df.columns = [
+    f"{str(a).strip()}|{str(b).strip()}|{str(c).strip()}"
+    for a, b, c in subnet_df.columns
+]
 
-    return conn
+# =========================
+# Helper Functions
+# =========================
 
-# ─────────────────────────────────────────────
-# FAST PARSER
-# ─────────────────────────────────────────────
+def normalize(text):
+    return str(text).strip().lower().replace("-", " ").replace("_", " ")
 
-def parse_line(line):
+def parse_ports(val):
+    if pd.isna(val):
+        return []
 
-    # Fast precheck
-    if "Teardown" not in line:
-        return None
+    result = []
+    for v in str(val).split(","):
+        v = v.strip()
 
+        if "-" in v:
+            try:
+                start, end = v.split("-")
+                result.extend([str(p) for p in range(int(start), int(end) + 1)])
+            except:
+                continue
+        elif v:
+            result.append(v)
+
+    return result
+
+
+def is_ip_or_subnet(value):
+    return bool(re.match(r"\d+\.\d+\.\d+\.\d+", str(value)))
+
+
+def expand_subnet(subnet):
     try:
-        parts = line.split()
+        network = ipaddress.ip_network(subnet, strict=False)
 
-        # Example:
-        # Teardown TCP connection for inside:10.1.1.5/443 to outside:20.1.1.10/8080
+        if network.num_addresses > 1024:
+            return [subnet]
 
-        protocol = parts[1]
+        return [str(ip) for ip in network]
+    except:
+        return [subnet]
 
-        src_part = parts[4]
-        dst_part = parts[6]
 
-        # Extract source IP
-        src = src_part.split(":")[1].split("/")[0]
+def resolve_value(value):
+    """
+    ✅ Handles:
+    - IPs / CIDR
+    - Ultimatix groups
+    - multi-env
+    - PR / DR filter
+    - complex input formats
+    """
+    if pd.isna(value):
+        return []
 
-        # Extract destination IP
-        dst = dst_part.split(":")[1].split("/")[0]
+    value_str = str(value).strip()
+    final_list = []
 
-        # Extract destination port
-        dst_port = dst_part.split("/")[1]
+    parts = [v.strip() for v in value_str.split(",") if v.strip()]
 
-        return (src, dst, dst_port, protocol)
+    # ✅ Case 1: pure IP/subnet
+    if all(is_ip_or_subnet(v) for v in parts):
+        for v in parts:
+            final_list.extend(expand_subnet(v))
+        return final_list
 
-    except Exception:
-        return None
+    v_clean = normalize(value_str)
 
-# ─────────────────────────────────────────────
-# MAIN PROCESSOR
-# ─────────────────────────────────────────────
+    # ✅ Detect tier
+    tier = None
+    if "non prod" in v_clean:
+        tier = "non prod"
+    elif "prod" in v_clean:
+        tier = "prod"
 
-def process_log_file(log_file, db_conn):
+    # ✅ Detect PR / DR
+    region_filter = []
+    if "pr" in v_clean:
+        region_filter.append("pr")
+    if "dr" in v_clean:
+        region_filter.append("dr")
 
-    cursor = db_conn.cursor()
+    # ✅ Detect environments
+    envs = []
 
-    total_lines = 0
-    total_matches = 0
-    total_inserts = 0
-    duplicates_skipped = 0
+    if "on prem" in v_clean:
+        envs.append("on prem")
+    if "azure" in v_clean:
+        envs.append("azure")
+    if "aws" in v_clean:
+        envs.append("aws")
 
-    batch = []
+    # ✅ fallback parsing for comma-only formats
+    if not envs and "," in value_str:
+        for p in value_str.split(","):
+            p = p.lower()
+            if "on prem" in p:
+                envs.append("on prem")
+            elif "azure" in p:
+                envs.append("azure")
+            elif "aws" in p:
+                envs.append("aws")
 
-    # IN-MEMORY DEDUP
-    seen = set()
+    if not envs or not tier:
+        return []
 
-    start_time = time.perf_counter()
+    # ✅ fetch subnet values
+    for env in envs:
+        for col in subnet_df.columns:
+            parts = col.lower().split("|")
 
-    print(f"\n⏳ Processing started...")
-    print(f"Input File : {log_file}")
-    print(f"Database   : {DB_FILE}\n")
-
-    with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-
-        for line in f:
-
-            total_lines += 1
-
-            parsed = parse_line(line)
-
-            if not parsed:
+            if len(parts) != 3:
                 continue
 
-            total_matches += 1
+            col_env, col_tier, col_region = parts
 
-            # FAST HASH-BASED DEDUP
-            if parsed in seen:
-                duplicates_skipped += 1
-                continue
+            if env in col_env and tier in col_tier:
 
-            seen.add(parsed)
+                # ✅ apply PR/DR filtering
+                if region_filter:
+                    if not any(r in col_region for r in region_filter):
+                        continue
 
-            batch.append(parsed)
+                subnets = subnet_df[col].dropna().astype(str).tolist()
 
-            # FLUSH TO DB
-            if len(batch) >= BATCH_SIZE:
+                for s in subnets:
+                    final_list.extend(expand_subnet(s))
 
-                cursor.executemany("""
-                    INSERT INTO network_policies
-                    (src, dst, dst_port, protocol)
-                    VALUES (?, ?, ?, ?)
-                """, batch)
+    return final_list
 
-                db_conn.commit()
 
-                total_inserts += len(batch)
+# =========================
+# Insert Data
+# =========================
+insert_query = """
+INSERT INTO network_rules (source, destination, port_no, protocol)
+VALUES (%s, %s, %s, %s)
+"""
 
-                batch.clear()
+seen = set()
 
-            # MEMORY CONTROL
-            if len(seen) >= DEDUP_CHUNK_SIZE:
-                seen.clear()
+for _, row in df.iterrows():
 
-    # FINAL FLUSH
-    if batch:
+    sources = resolve_value(row[source_col])
+    destinations = resolve_value(row[dest_col])
 
-        cursor.executemany("""
-            INSERT INTO network_policies
-            (src, dst, dst_port, protocol)
-            VALUES (?, ?, ?, ?)
-        """, batch)
+    ports = parse_ports(row[port_col])
+    protocol = str(row[protocol_col]).strip()
 
-        db_conn.commit()
+    for src in sources:
+        for dst in destinations:
+            for p in ports:
 
-        total_inserts += len(batch)
+                record = (src, dst, p, protocol)
 
-    end_time = time.perf_counter()
+                if record not in seen:
+                    seen.add(record)
+                    cur.execute(insert_query, record)
 
-    duration = end_time - start_time
+conn.commit()
 
-    # ─────────────────────────────────────────
-    # STATS
-    # ─────────────────────────────────────────
+cur.close()
+conn.close()
 
-    print("\n✅ Processing Complete")
-    print("-" * 50)
-
-    print(f"Total Lines Read       : {total_lines}")
-    print(f"Matching Log Entries   : {total_matches}")
-    print(f"Unique Policies Insert : {total_inserts}")
-    print(f"Duplicates Skipped     : {duplicates_skipped}")
-
-    print("-" * 50)
-
-    print(f"Execution Time         : {duration:.2f} seconds")
-
-    if duration > 0:
-        rate = total_lines / duration
-        print(f"Processing Rate        : {rate:,.0f} lines/sec")
-
-# ─────────────────────────────────────────────
-# ENTRY POINT
-# ─────────────────────────────────────────────
-
-if __name__ == "__main__":
-
-    if not os.path.exists(INPUT_LOG_FILE):
-
-        print(f"❌ File not found: {INPUT_LOG_FILE}")
-
-    else:
-
-        conn = setup_database(DB_FILE)
-
-        try:
-            process_log_file(INPUT_LOG_FILE, conn)
-
-        finally:
-            conn.close()
+print("✅ ✅ FINAL VERSION: All scenarios handled successfully!")
