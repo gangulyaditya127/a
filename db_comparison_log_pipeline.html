@@ -1,0 +1,116 @@
+
+<style>
+  .wrap { padding: 1rem 0; font-family: var(--font-sans); }
+  .grid { display: grid; grid-template-columns: 140px repeat(6, 1fr); gap: 0; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .cell { padding: 10px 10px; font-size: 12px; border-bottom: 0.5px solid var(--color-border-tertiary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; align-items: flex-start; line-height: 1.4; color: var(--color-text-primary); }
+  .cell:last-child, .row-end { border-right: none; }
+  .hdr { background: var(--color-background-secondary); font-size: 11px; font-weight: 500; color: var(--color-text-secondary); padding: 10px 10px; border-bottom: 0.5px solid var(--color-border-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; }
+  .hdr-db { background: var(--color-background-secondary); font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .row-label { background: var(--color-background-secondary); font-size: 11px; font-weight: 500; color: var(--color-text-secondary); border-right: 0.5px solid var(--color-border-secondary); }
+  .win { background: #EAF3DE; color: #27500A; }
+  .ok  { background: var(--color-background-primary); color: var(--color-text-primary); }
+  .warn { background: #FAEEDA; color: #633806; }
+  .bad { background: #FCEBEB; color: #791F1F; }
+  .pick { background: #E1F5EE; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; margin-bottom: 4px; }
+  .b-win { background: #C0DD97; color: #27500A; }
+  .b-ok  { background: #D3D1C7; color: #444441; }
+  .b-warn { background: #FAC775; color: #633806; }
+  .b-bad  { background: #F7C1C1; color: #791F1F; }
+  .verdict { margin: 1.5rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .vcard { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; background: var(--color-background-primary); }
+  .vcard.top { border: 1.5px solid #1D9E75; background: #E1F5EE; }
+  .vcard h3 { margin: 0 0 6px; font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .vcard p  { margin: 0; font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+  .vcard.top h3 { color: #085041; }
+  .note { font-size: 12px; color: var(--color-text-secondary); margin-top: 1rem; line-height: 1.6; }
+  .last-row .cell, .last-row .row-label { border-bottom: none; }
+</style>
+<div class="wrap">
+<h2 class="sr-only" style="position:absolute;left:-9999px">Database comparison for high-throughput log ingestion pipeline</h2>
+
+<div class="grid">
+  <div class="hdr hdr-db">Criterion</div>
+  <div class="hdr">Postgres</div>
+  <div class="hdr">MongoDB</div>
+  <div class="hdr">Cassandra</div>
+  <div class="hdr">ClickHouse</div>
+  <div class="hdr" style="border-right:none">ScyllaDB</div>
+  <div class="hdr row-end">TimescaleDB</div>
+
+  <!-- Row 1 -->
+  <div class="cell row-label">Write throughput</div>
+  <div class="cell bad"><span class="badge b-bad">Poor</span><br>WAL + MVCC overhead kills bulk insert speed at this scale</div>
+  <div class="cell warn"><span class="badge b-warn">Medium</span><br>WiredTiger decent, but single-shard bottlenecks appear fast</div>
+  <div class="cell win"><span class="badge b-win">Excellent</span><br>Designed for exactly this — append-only, LSM tree, partitioned</div>
+  <div class="cell warn"><span class="badge b-warn">Mixed</span><br>Column store optimises reads; bulk insert fast but not its primary role</div>
+  <div class="cell win"><span class="badge b-win">Excellent</span><br>C++ Cassandra clone, 10–20× faster writes, microsecond latency</div>
+  <div class="cell ok row-end"><span class="badge b-ok">Good</span><br>Postgres extension, faster than vanilla PG for time-series inserts</div>
+
+  <!-- Row 2 -->
+  <div class="cell row-label">Dedup inside DB</div>
+  <div class="cell win"><span class="badge b-win">Native</span><br>UNIQUE constraints + ON CONFLICT DO NOTHING is rock solid</div>
+  <div class="cell ok"><span class="badge b-ok">Manageable</span><br>Unique indexes work but memory-heavy; partial index tricks needed</div>
+  <div class="cell warn"><span class="badge b-warn">Hard</span><br>No unique key enforcement at DB level; must handle in application layer</div>
+  <div class="cell warn"><span class="badge b-warn">Hard</span><br>No upsert/dedup natively; ReplacingMergeTree is async &amp; eventual</div>
+  <div class="cell warn"><span class="badge b-warn">Hard</span><br>Same as Cassandra — LWT (lightweight transactions) work but are slow</div>
+  <div class="cell win row-end"><span class="badge b-win">Native</span><br>Inherits PG unique constraints; better chunk management</div>
+
+  <!-- Row 3 -->
+  <div class="cell row-label">7-min ingestion window</div>
+  <div class="cell bad"><span class="badge b-bad">Risky</span><br>30M rows with unique check in 7 min is borderline impossible on PG</div>
+  <div class="cell warn"><span class="badge b-warn">Borderline</span><br>Possible with sharding + bulk ops, but operationally complex</div>
+  <div class="cell win"><span class="badge b-win">Comfortable</span><br>Horizontal scale + tuned batch size handles this without breaking a sweat</div>
+  <div class="cell ok"><span class="badge b-ok">Feasible</span><br>Bulk inserts fast, but dedup workarounds eat into window</div>
+  <div class="cell win"><span class="badge b-win">Comfortable</span><br>Better than Cassandra; shard-per-core model, no GC pauses</div>
+  <div class="cell ok row-end"><span class="badge b-ok">Feasible</span><br>With hypertable partitioning &amp; COPY command; tight but doable</div>
+
+  <!-- Row 4 -->
+  <div class="cell row-label">Ops complexity</div>
+  <div class="cell win"><span class="badge b-win">Simple</span><br>Battle-tested, huge ecosystem, easy to hire for</div>
+  <div class="cell ok"><span class="badge b-ok">Medium</span><br>Sharding and replica sets add ops overhead</div>
+  <div class="cell warn"><span class="badge b-warn">High</span><br>JVM tuning, token ring, compaction — needs a dedicated ops person</div>
+  <div class="cell warn"><span class="badge b-warn">Medium</span><br>Cluster setup non-trivial; ReplacingMergeTree nuances trip teams</div>
+  <div class="cell ok"><span class="badge b-ok">Medium</span><br>Easier than Cassandra (no JVM); still distributed system complexity</div>
+  <div class="cell ok row-end"><span class="badge b-ok">Medium</span><br>PG-compatible but chunk/retention policies add learning curve</div>
+
+  <!-- Row 5 -->
+  <div class="cell row-label">Storage efficiency</div>
+  <div class="cell warn"><span class="badge b-warn">Poor</span><br>Row storage + bloat from MVCC dead tuples; needs autovacuum care</div>
+  <div class="cell warn"><span class="badge b-warn">Medium</span><br>BSON overhead per document; compresses okay but no columnar gains</div>
+  <div class="cell ok"><span class="badge b-ok">Good</span><br>LSM compaction reclaims well; replication adds 3× raw bytes by default</div>
+  <div class="cell win"><span class="badge b-win">Excellent</span><br>Columnar compression ratios of 10–20× typical for log data</div>
+  <div class="cell ok"><span class="badge b-ok">Good</span><br>Similar to Cassandra; per-shard compression, better than Mongo</div>
+  <div class="cell ok row-end"><span class="badge b-ok">Good</span><br>Chunk compression + PG row storage; better than vanilla PG</div>
+
+  <!-- Row 6 — last -->
+  <div class="cell row-label last-row" style="border-bottom:none">Verdict</div>
+  <div class="cell bad last-row" style="border-bottom:none">Not suited at this scale</div>
+  <div class="cell warn last-row" style="border-bottom:none">Workable with effort, not ideal</div>
+  <div class="cell win last-row" style="border-bottom:none">Strong fit — needs app-layer dedup</div>
+  <div class="cell warn last-row" style="border-bottom:none">Great storage, dedup is the problem</div>
+  <div class="cell win last-row" style="border-bottom:none">Best overall fit</div>
+  <div class="cell ok last-row row-end" style="border-bottom:none">PG-comfort zone option</div>
+</div>
+
+<div class="verdict">
+  <div class="vcard top">
+    <h3>🥇 Recommended: ScyllaDB</h3>
+    <p>Write throughput of Cassandra without JVM overhead. Handles 30M rows in under 7 min on a modest cluster. Use composite partition key on (src_ip, dst_ip, dst_port, protocol) — Scylla enforces uniqueness at the partition level, doubling as your DB-side dedup. Pair with Redis for the 10M reference list check pre-insert.</p>
+  </div>
+  <div class="vcard top" style="border-color: #5DCAA5;">
+    <h3>🥈 Runner-up: Cassandra</h3>
+    <p>Same distributed write model as Scylla, more operators in the job market, slightly higher ops overhead (JVM GC pauses can spike). Use if your team already has Cassandra expertise. Same Redis pairing for reference dedup.</p>
+  </div>
+  <div class="vcard">
+    <h3>Honorable mention: ClickHouse</h3>
+    <p>If storage cost matters a lot (columnar compression is extraordinary on IP/port data), ClickHouse is worth it — but you must handle dedup entirely in your application before inserting. ReplacingMergeTree dedup is async and not suitable for your SLA.</p>
+  </div>
+  <div class="vcard">
+    <h3>What to avoid here</h3>
+    <p>Postgres and TimescaleDB are great databases — just not for 30M-rows-in-7-minutes with unique constraint checks. MongoDB is in a similar boat unless you shard aggressively, which adds ops pain for no real gain vs Scylla.</p>
+  </div>
+</div>
+
+<p class="note">* Dedup note for ScyllaDB/Cassandra: model your row key as the 4-tuple (src_ip, dst_ip, dst_port, protocol). A duplicate INSERT with the same key is a no-op — this is your DB-level dedup. The Redis SET handles the external 10M list check before you even attempt insertion.</p>
+</div>
