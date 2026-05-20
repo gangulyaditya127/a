@@ -1,46 +1,14 @@
-@app.get("/download-combined-excel")
-def download_combined_excel():
-
-    if not os.path.exists(EXCEL_DATA_DIR):
-        raise HTTPException(404, "excel_data directory not found")
-
-    excel_files = [
-        f for f in os.listdir(EXCEL_DATA_DIR)
-        if f.endswith(".xlsx")
-    ]
-
-    if not excel_files:
-        raise HTTPException(404, "No Excel files found in directory")
-
-    # ✅ Output file
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"Combined_Excel_{timestamp}.xlsx"
-    output_path = os.path.join(EXCEL_DATA_DIR, output_file)
-
+@app.post("/upload/nexp-site-details/")
+def upload_va_grouping_title(file: UploadFile = File(...)):
+    target_path = "Nexpose site deatils and spocs.xlsx"
     try:
-        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-
-            for file in excel_files:
-                file_path = os.path.join(EXCEL_DATA_DIR, file)
-
-                try:
-                    df = pd.read_excel(file_path)
-
-                    # ✅ Sheet name = file name (max 31 chars Excel limit)
-                    sheet_name = os.path.splitext(file)[0][:31]
-
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
-
-                except Exception as e:
-                    print(f"Skipping file {file}: {str(e)}")
-
-        return FileResponse(
-            path=output_path,
-            filename=output_file,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
+        with open(target_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {
+            "message": "Nexpose site deatils and spocs uploaded successfully",
+            "saved_as": target_path
+        }
     except Exception as e:
-        raise HTTPException(500, f"Failed to combine files: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-keep a download option for this in the process excel site and also make sure that every time all the uploads in the process excel should not be compulsory i want to upload whenever I want to make changes else it can use the previously uploaded data
+I have added this api create another upload option for this API
