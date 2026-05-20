@@ -1,14 +1,29 @@
-@app.post("/upload/nexp-site-details/")
-def upload_va_grouping_title(file: UploadFile = File(...)):
-    target_path = "Nexpose site deatils and spocs.xlsx"
-    try:
-        with open(target_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {
-            "message": "Nexpose site deatils and spocs uploaded successfully",
-            "saved_as": target_path
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+version: "3.9"
 
-I have added this api create another upload option for this API
+services:
+  redis-stack:
+    image: redis/redis-stack-server:latest
+    container_name: redis-stack
+    mem_limit: 512m
+    ports:
+      - "6379:6379"
+    command: redis-stack-server --maxmemory 512mb --maxmemory-policy noeviction
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  scylladb:
+    image: scylladb/scylla:latest
+    container_name: scylladb
+    mem_limit: 3g
+    cpuset: "0-2"
+    ports:
+      - "9042:9042"
+    command: --smp 3 --memory 2G --overprovisioned 1 --developer-mode 1
+    restart: unless-stopped
+    volumes:
+      - scylla_data:/var/lib/scylla
+
+volumes:
+  redis_data:
+  scylla_data:
