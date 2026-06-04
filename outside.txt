@@ -1,368 +1,407 @@
-I want to trigger the first api when it is completed then the second API and the all the rest api as follows when I click process & populate data button 
 
+Now lets create the end to end functionality of Cloud Resource bucketing .
+Some change in functionality wise, is that..there will be no dropdown of resources which means we will not maintain any catalog. 
 
-@app.post("/generate-nexpose-ip-excel")
-def generate_nexpose_ip_excel(db=Depends(get_db)):
-    logger.info("=== Generate Nexpose Excel API called ===")
+here I need to build the solution where I want to have a conversation bot with llm based solution, where user will give detail of the resource/resources, and the agent will ask 
+further questions related to the configuration of the resources and once agent gets its informations required it will create a response with the resource bucket and share. Then user 
+can approve the bucket 
 
-    try:
-        # Validate reference files
-        if not os.path.exists(REFERENCE_FILE):
-            raise FileNotFoundError("Reference Excel file not found")
-        
-        if not os.path.exists(SITE_ID_FILE):
-            raise FileNotFoundError("Site ID Excel file not found")
+And option will be given to user to add resource where user can input free text , with the resource name and configuration .
 
-        site_df = pd.read_excel(SITE_ID_FILE)
+You can take reference of this standalone python code below, to take idea of the backend code(please donot consider it to be the ideal one), and create a new module inside
+backend/app/domain and build the code , and also update the UI along with it accordingly
 
-        if SITE_ID_COLUMN not in site_df.columns:
-            raise ValueError(f"Column '{SITE_ID_COLUMN}' not found in site ID Excel file")
+There are two reference standalone python codes : 
 
-        SITE_IDS = (
-            site_df[SITE_ID_COLUMN]
-            .dropna()
-            .astype(int)
-            .unique()
-            .tolist()
-        )
+1. With Gemini 
 
-        if not SITE_IDS:
-            raise ValueError("No Site IDs found in site ID Excel file")
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
+import google.generativeai as genai
+import os
+import re
+import json
 
-        # Reference Excel for mapping
-        ref_df = pd.read_excel(REFERENCE_FILE)
+# Initialize FastAPI App
+app = FastAPI(
+    title="Cloud Resource Architect API",
+    description="API for the Cloud Resource Conversational Bot. Converts chat to resource recommendations.",
+    version="1.0.0"
+)
 
-        all_rows = []
-        successful_sites = []
-        failed_sites = []
-        empty_data_sites = []
+import urllib.request
+from openai import OpenAI
+ 
+is_proxy_enable = urllib.request.getproxies()
+if is_proxy_enable != {}:
+    ips = ['10.170.21.213','localhost','127.0.0.1','10.169.38.3', '10.169.51.2','ismartams.tcsapps.com']
+    os.environ['http_proxy'] = 'http://proxy.tcs.com:8080'
+    os.environ['https_proxy'] = 'http://proxy.tcs.com:8080'
+    os.environ['no_proxy'] = ",".join(ips)
 
-        # Static Site IDs for now
-        SITE_IDS = [191, 192, 193, 194]
+# Configure Gemini (Ensure you set your GEMINI_API_KEY environment variable)
+# os.environ["GEMINI_API_KEY"] = "YOUR_API_KEY_HERE"
+API_KEY = "AIzaSyC83mTqx7ETYS_xpn29awws2VOr2N6XvFc"
+if not API_KEY:
+    print("WARNING: GEMINI_API_KEY environment variable not set.")
+genai.configure(api_key=API_KEY)
 
-        for site_id in SITE_IDS:
-            logger.info(f"Processing Site ID: {site_id}")
+# --- Pydantic Models ---
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="Role of the sender: 'user' or 'model'")
+    text: str = Field(..., description="The message content")
 
-            try:
-                site_row = ref_df[ref_df["Site- ID"] == site_id]
-                site_name = site_row.iloc[0]["Site-Name"] if not site_row.empty else f"Site-{site_id}"
-                owner = site_row.iloc[0]["Owner"] if not site_row.empty else "Unknown"
+class ChatRequest(BaseModel):
+    provider: str = Field(default="AWS", description="Cloud provider context (e.g., AWS, Azure, GCP)")
+    message: str = Field(..., description="The latest user message")
+    history: List[ChatMessage] = Field(default=[], description="Previous conversation history")
 
-                creds = get_active_nexpose_credentials(db)
-                base_url = creds["base_url"]
-                api_base = base_url.rstrip("/") + "/api/3/sites"
+class ProposedResource(BaseModel):
+    service: str
+    count: int
+    configDetails: str
 
-                response = requests.get(
-                    f"{api_base}/{site_id}/included_targets",
-                    auth=(creds["username"], creds["password"]),
-                    verify=False,
-                    timeout=60
-                )
+class ChatResponse(BaseModel):
+    reply: str = Field(..., description="The conversational reply from the AI (cleaned of JSON)")
+    proposed_resources: Optional[List[ProposedResource]] = Field(default=[], description="Parsed resource recommendations")
 
-                response.raise_for_status()
-                raw_addresses = response.json().get("addresses", [])
+# --- Helper Functions ---
+def get_system_prompt(provider: str) -> str:
+    return f"""
+You are an expert Cloud Solution Architect specializing in {provider}.
+Your goal is to help the user design their cloud infrastructure and provision the right resources.
 
-                if not raw_addresses:
-                    empty_data_sites.append(site_id)
-                    continue
+Follow these rules strictly:
+1. Have a natural, conversational interaction. Ask 1-2 clarifying questions at a time to understand their workload.
+2. Do not overwhelm the user with too many questions at once.
+3. Once you have gathered enough requirements, propose a final cloud resource configuration.
+4. IMPORTANT: When proposing the configuration, you MUST include a JSON array containing the resources. Wrap the JSON exactly in a ```json block.
+   
+Schema for the JSON array:
+[
+  {{
+    "service": "Name of the cloud service",
+    "count": number (e.g., 2),
+    "configDetails": "Specific configuration details (e.g., t3.medium, Multi-AZ)"
+  }}
+]
 
-                expanded_ips = expand_ip_ranges(raw_addresses)
+Always provide a friendly natural language explanation alongside the JSON block.
+"""
 
-                for ip in expanded_ips:
-                    all_rows.append({
-                        "Defind IP": ip,
-                        "Site ID": site_id,
-                        "Site Name": site_name,
-                        "Owner": owner
-                    })
-
-                successful_sites.append(site_id)
-
-            except Exception as e:
-                failed_sites.append({"site_id": site_id, "error": str(e)})
-                logger.error(f"Error processing site {site_id}: {e}")
-
-        if not all_rows:
-            raise ValueError("No IPs collected from provided Site IDs")
-
-        df = pd.DataFrame(all_rows)
-        df.drop_duplicates(subset=["Defind IP"], inplace=True)
-
-        # ================================================
-        # ONLY UPDATE Nexpose- raw data.xlsx (no new file)
-        # ================================================
-        raw_data_path = os.path.join("reference_excel", "Nexpose- raw data.xlsx")
-
-        if os.path.exists(raw_data_path):
-            with pd.ExcelWriter(raw_data_path, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-                df.to_excel(writer, sheet_name="Def -IP", index=False)
-        else:
-            with pd.ExcelWriter(raw_data_path, engine="openpyxl") as writer:
-                df.to_excel(writer, sheet_name="Def -IP", index=False)
-
-        logger.info("Sheet 'Def -IP' updated in Nexpose- raw data.xlsx")
-
-        return {
-            "status": "partial_success" if failed_sites or empty_data_sites else "success",
-            "updated_file": raw_data_path,
-            "ip_count": len(df),
-            "site_summary": {
-                "total": len(SITE_IDS),
-                "successful": successful_sites,
-                "failed": failed_sites,
-                "no_data": empty_data_sites
-            },
-            "data": df.to_dict(orient="records")
-        }
-
-    except Exception as e:
-        logger.exception("Failed to generate Nexpose Excel")
-        raise HTTPException(status_code=500, detail=str(e))
-@app.post("/nexpose/run-full-report/")
-def nexpose_full_report(db: Session = Depends(get_db)):
-
-    try:
-        import time
-        import io
-        import pandas as pd
-        from openpyxl import Workbook, load_workbook
-
-        # ===============================================================
-        # 1️⃣ FETCH ACTIVE NEXPOSE CREDENTIALS
-        # ===============================================================
-        creds = get_active_nexpose_credentials(db)
-        base_url = creds["base_url"] 
-        username = creds["username"]
-        password = creds["password"]   # already decrypted
-
-        api_base = base_url.rstrip("/") + "/api/3"
-
-        # ===============================================================
-        # 2️⃣ COLLECT UNIQUE SITE IDs FROM Nexpose- raw data.xlsx
-        # ===============================================================
-        raw_path = "reference_excel/Nexpose- raw data.xlsx"
-        df_sites = pd.read_excel(raw_path, sheet_name="Def -IP")
-
-        if "Site ID" not in df_sites.columns:
-            raise HTTPException(400, detail="'Site ID' column missing in Def -IP")
-
-        site_ids = (
-            df_sites["Site ID"]
-            .dropna()
-            .astype(int)
-            .unique()
-            .tolist()
-        )
-
-        if not site_ids:
-            raise HTTPException(400, detail="No Site IDs found in Def -IP")
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # ===============================================================
-        # 3️⃣ PROCESS SCANS FOR EACH SITE
-        # ===============================================================
-        combined_df = pd.DataFrame()
-        used_scans = []
-
-        for site_id in site_ids:
-
-            # -----------------------------------------------------------
-            # 🔹 GET ALL SCANS FOR THE SITE
-            # -----------------------------------------------------------
-            scans_res = requests.get(
-                f"{api_base}/sites/{site_id}/scans",
-                auth=(username, password),
-                verify=False
-            )
-
-            if scans_res.status_code != 200:
-                continue  
-
-            scans_list = scans_res.json().get("resources", [])
+def extract_json_resources(text: str) -> tuple[str, List[Dict[str, Any]]]:
+    """Extracts JSON resources from the LLM output and returns the cleaned text and parsed list."""
+    json_regex = r"```json\n(.*?)\n```"
+    matches = re.findall(json_regex, text, re.DOTALL)
+    
+    resources = []
+    clean_text = text
+    
+    if matches:
+        try:
+            # Parse the last matched json block
+            resources = json.loads(matches[-1])
+            # Remove the json block from the text for a cleaner chat response
+            clean_text = re.sub(json_regex, "", text, flags=re.DOTALL).strip()
+        except json.JSONDecodeError:
+            pass
             
-            # -----------------------------------------------------------
-# 🚨 CHECK FOR RUNNING OR INTEGRATING SCANS — STOP IMMEDIATELY
-# -----------------------------------------------------------
-            running_scans = [
-                s for s in scans_list
-                if s.get("status") in ["running", "integrating"]
-            ]
+    return clean_text, resources
 
-            if running_scans:
-                latest_running = max(running_scans, key=lambda x: x.get("startTime"))
-                return {
-                    "status": "error",
-                    "site_id": site_id,
-                    "scan_id": latest_running.get("id"),
-                    "scan_status": latest_running.get("status"),
-                    "scan_type": latest_running.get("scanType"),
-                    "start_time": latest_running.get("startTime"),
-                    "end_time": latest_running.get("endTime"),
-                    "message": f"Scan for site {site_id} is currently '{latest_running.get('status')}'. Report generation aborted."
-                }
-
-            # -----------------------------------------------------------
-            # 🔹 Filter Scheduled + Finished scans
-            # -----------------------------------------------------------
-            valid_scans = [
-                s for s in scans_list
-                if s.get("scanType") == "Scheduled" and s.get("status") == "finished"
-            ]
-
-            if not valid_scans:
-                continue   # Option A: skip this site
-
-            # -----------------------------------------------------------
-            # 🔹 Pick latest scan
-            # -----------------------------------------------------------
-            latest_scan = max(valid_scans, key=lambda x: x.get("endTime"))
-
-            scan_id = latest_scan.get("id")
-            start_time = latest_scan.get("startTime")
-            end_time = latest_scan.get("endTime")
-
-            used_scans.append({
-                "site_id": site_id,
-                "scan_id": scan_id,
-                "start_time": start_time,
-                "end_time": end_time
+# --- Endpoints ---
+@app.post("/chat", response_model=ChatResponse, tags=["Chat"])
+async def generate_chat_response(request: ChatRequest):
+    try:
+        # Initialize the model with the system instruction
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction=get_system_prompt(request.provider)
+        )
+        
+        # Format history for Gemini
+        formatted_history = []
+        for msg in request.history:
+            formatted_history.append({
+                "role": msg.role,
+                "parts": [msg.text]
             })
+            
+        # Start chat session
+        chat = model.start_chat(history=formatted_history)
+        
+        # Send message
+        response = chat.send_message(request.message)
+        response_text = response.text
+        
+        # Parse output
+        clean_text, resources = extract_json_resources(response_text)
+        
+        return ChatResponse(
+            reply=clean_text,
+            proposed_resources=resources
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-            # -----------------------------------------------------------
-            # 4️⃣ Create Scan Report Payload
-            # -----------------------------------------------------------
-            report_payload = {
-                "format": "csv-export",
-                "language": "en-US",
-                "name": f"auto_report_scan_{scan_id}_{timestamp}",
-                "scope": { "scan": scan_id },
-                "filters": {
-                    "severity": "all",
-                    "statuses": [
-                        "potentially-vulnerable",
-                        "vulnerable-version",
-                        "vulnerable"
-                    ]
-                },
-                "template": "csv-32-report-32-with-32-complete-32-details-32-copy"
-            }
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+	
+2. With TCS bfsi model
 
-            # -----------------------------------------------------------
-            # 5️⃣ Create Report
-            # -----------------------------------------------------------
-            create_res = requests.post(
-                f"{api_base}/reports",
-                auth=(username, password),
-                json=report_payload,
-                verify=False
-            )
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
+import os
+import re
+import json
+import logging
+import traceback
 
-            if create_res.status_code != 201:
-                continue
+from langchain_tcs_bfsi_genai import APIClient, Auth, TCSLLMs
 
-            report_id = create_res.json()["id"]
+# --- Logging ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-            # -----------------------------------------------------------
-            # 6️⃣ Generate Instance
-            # -----------------------------------------------------------
-            generate_res = requests.post(
-                f"{api_base}/reports/{report_id}/generate",
-                auth=(username, password),
-                verify=False
-            )
+# Initialize FastAPI App
+app = FastAPI(
+    title="Cloud Resource Architect API",
+    description="API for the Cloud Resource Conversational Bot. Converts chat to resource recommendations.",
+    version="1.0.0"
+)
 
-            if generate_res.status_code >= 400:
-                continue
+# --- LLM Configuration ---
+LLM_USERNAME = "152459"
+LLM_PASSWORD = "Surajit@152459"
+LLM_MODEL = "gpt-4o"
 
-            instance_id = generate_res.json()["id"]
+llm = None
 
-            # -----------------------------------------------------------
-            # 🔁 7️⃣ RETRY DOWNLOAD UNTIL CSV IS READY
-            # -----------------------------------------------------------
-            csv_content = ""
-            max_retries = 10
-            wait_time = 5
+import urllib.request
+from openai import OpenAI
+ 
+is_proxy_enable = urllib.request.getproxies()
+if is_proxy_enable != {}:
+    ips = ['10.170.21.213','localhost','127.0.0.1','10.169.38.3', '10.169.51.2','ismartams.tcsapps.com']
+    os.environ['http_proxy'] = 'http://proxy.tcs.com:8080'
+    os.environ['https_proxy'] = 'http://proxy.tcs.com:8080'
+    os.environ['no_proxy'] = ",".join(ips)
 
-            for attempt in range(max_retries):
+def initialize_llm():
+    """
+    Initialize TCS BFSI GenAI LLM client.
+    """
+    try:
+        if not LLM_USERNAME or not LLM_PASSWORD:
+            raise ValueError("LLM_USERNAME and LLM_PASSWORD environment variables must be set.")
 
-                out_res = requests.get(
-                    f"{api_base}/reports/{report_id}/history/{instance_id}/output",
-                    auth=(username, password),
-                    verify=False
-                )
+        client = APIClient()
+        auth = Auth(client)
+        auth.login(LLM_USERNAME, LLM_PASSWORD)
 
-                if out_res.status_code < 400:
-                    csv_content = out_res.text
-                    if csv_content.strip() != "":
-                        break
-
-                time.sleep(wait_time)
-
-            if csv_content.strip() == "":
-                continue  # Skip this scan
-
-            # -----------------------------------------------------------
-            # 8️⃣ Convert CSV → DataFrame
-            # -----------------------------------------------------------
-            scan_df = pd.read_csv(io.StringIO(csv_content))
-
-            # -----------------------------------------------------------
-            # 9️⃣ Add Extra Columns
-            # -----------------------------------------------------------
-            if "Vulnerability CVSSv3 Score" in scan_df.columns:
-                scan_df["Vulnerability CVSS Score"] = scan_df["Vulnerability CVSSv3 Score"]
-            else:
-                scan_df["Vulnerability CVSS Score"] = None
-
-            def extract_age(value):
-                if pd.isna(value):
-                    return None
-                val = str(value)
-                num = ''.join([c for c in val if c.isdigit()])
-                return int(num) if num else None
-
-            if "Vulnerability Age" in scan_df.columns:
-                scan_df["Vulnaerability Ageing"] = scan_df["Vulnerability Age"].apply(extract_age)
-            else:
-                scan_df["Vulnaerability Ageing"] = None
-
-            # -----------------------------------------------------------
-            # 🔹 Append to combined DF
-            # -----------------------------------------------------------
-            combined_df = pd.concat([combined_df, scan_df], ignore_index=True)
-
-        # ===============================================================
-        # 10️⃣ WRITE TO EXCEL → scan logs SHEET
-        # ===============================================================
-        excel_path = "reference_excel/Nexpose- raw data.xlsx"
-        sheet_name = "scan logs"
-
-        if os.path.exists(excel_path):
-            wb = load_workbook(excel_path)
-            if sheet_name in wb.sheetnames:
-                wb.remove(wb[sheet_name])
-        else:
-            wb = Workbook()
-            wb.remove(wb.active)
-
-        ws = wb.create_sheet(sheet_name)
-        ws.append(combined_df.columns.tolist())
-
-        for row in combined_df.itertuples(index=False, name=None):
-            ws.append(list(row))
-
-        wb.save(excel_path)
-
-        return {
-            "status": "success",
-            "message": "Scan-based Nexpose report generated successfully",
-            "scan_count": len(used_scans),
-            "used_scans": used_scans,
-            "excel_updated": excel_path,
-            "sheet": sheet_name,
-            "rows_written": len(combined_df)
-        }
+        return TCSLLMs(
+            client=client,
+            model_name=LLM_MODEL
+        )
 
     except Exception as e:
-        raise HTTPException(500, detail=str(e))
+        logger.error(f"LLM initialization failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise Exception("Exception occurred during LLM initialization") from e
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Initialize LLM once during application startup.
+    """
+    global llm
+    llm = initialize_llm()
+    logger.info("LLM initialized successfully.")
+
+
+# --- Pydantic Models ---
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="Role of the sender: 'user' or 'model'")
+    text: str = Field(..., description="The message content")
+
+
+class ChatRequest(BaseModel):
+    provider: str = Field(default="AWS", description="Cloud provider context e.g. AWS, Azure, GCP")
+    message: str = Field(..., description="The latest user message")
+    history: List[ChatMessage] = Field(default_factory=list, description="Previous conversation history")
+
+
+class ProposedResource(BaseModel):
+    service: str
+    count: int
+    configDetails: str
+
+
+class ChatResponse(BaseModel):
+    reply: str = Field(..., description="The conversational reply from the AI cleaned of JSON")
+    proposed_resources: Optional[List[ProposedResource]] = Field(
+        default_factory=list,
+        description="Parsed resource recommendations"
+    )
+
+
+# --- Helper Functions ---
+def get_system_prompt(provider: str) -> str:
+    return f"""
+You are an expert Cloud Solution Architect specializing in {provider}.
+Your goal is to help the user design their cloud infrastructure and provision the right resources.
+
+Follow these rules strictly:
+1. Have a natural, conversational interaction.
+2. Ask 1-2 clarifying questions at a time to understand their workload.
+3. Do not overwhelm the user with too many questions at once.
+4. Once you have gathered enough requirements, propose a final cloud resource configuration.
+5. IMPORTANT: When proposing the configuration, you MUST include a JSON array containing the resources.
+6. Wrap the JSON exactly in a ```json block.
+
+Schema for the JSON array:
+[
+  {{
+    "service": "Name of the cloud service",
+    "count": number,
+    "configDetails": "Specific configuration details e.g. t3.medium, Multi-AZ"
+  }}
+]
+
+Always provide a friendly natural language explanation alongside the JSON block.
+"""
+
+
+def build_llm_prompt(request: ChatRequest) -> str:
+    """
+    Builds a single prompt string for llm.invoke().
+    Since the new LLM call uses invoke(llm_prompt), we combine:
+    - system instruction
+    - conversation history
+    - latest user message
+    """
+
+    system_prompt = get_system_prompt(request.provider)
+
+    history_text = ""
+    if request.history:
+        history_text = "\nConversation history:\n"
+        for msg in request.history:
+            role = "User" if msg.role.lower() == "user" else "Assistant"
+            history_text += f"{role}: {msg.text}\n"
+
+    prompt = f"""
+{system_prompt}
+
+{history_text}
+
+Latest user message:
+User: {request.message}
+
+Assistant:
+"""
+
+    return prompt.strip()
+
+
+def extract_response_text(llm_response: Any) -> str:
+    """
+    Handles different possible response formats from LangChain-style LLMs.
+    llm.invoke() may return:
+    - string
+    - object with .content
+    - dict-like response
+    """
+
+    if isinstance(llm_response, str):
+        return llm_response
+
+    if hasattr(llm_response, "content"):
+        return llm_response.content
+
+    if isinstance(llm_response, dict):
+        if "content" in llm_response:
+            return llm_response["content"]
+        if "text" in llm_response:
+            return llm_response["text"]
+        if "response" in llm_response:
+            return llm_response["response"]
+
+    return str(llm_response)
+
+
+def extract_json_resources(text: str) -> tuple[str, List[Dict[str, Any]]]:
+    """
+    Extracts JSON resources from the LLM output and returns:
+    - cleaned natural language reply
+    - parsed resource list
+    """
+
+    json_regex = r"```json\s*(.*?)\s*```"
+    matches = re.findall(json_regex, text, re.DOTALL)
+
+    resources = []
+    clean_text = text
+
+    if matches:
+        try:
+            resources = json.loads(matches[-1])
+            clean_text = re.sub(json_regex, "", text, flags=re.DOTALL).strip()
+        except json.JSONDecodeError:
+            logger.warning("Failed to parse JSON block from LLM response.")
+
+    return clean_text, resources
+
+
+# --- Endpoints ---
+@app.post("/chat", response_model=ChatResponse, tags=["Chat"])
+async def generate_chat_response(request: ChatRequest):
+    try:
+        global llm
+
+        if llm is None:
+            llm = initialize_llm()
+
+        llm_prompt = build_llm_prompt(request)
+
+        llm_response = llm.invoke(llm_prompt)
+
+        response_text = extract_response_text(llm_response)
+
+        clean_text, resources = extract_json_resources(response_text)
+
+        return ChatResponse(
+            reply=clean_text,
+            proposed_resources=resources
+        )
+
+    except Exception as e:
+        logger.error(f"Chat generation failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    return {
+        "status": "ok",
+        "model": LLM_MODEL,
+        "llm_initialized": llm is not None
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+	
+..
+
+The reason I gave two reference code is because , create a utility file having the llm call methods as gemini_invoke and bfsi_invoke, make the input and output similar for these methods so that these method calls are easily switchable based on the llm availability.
+
+
+
