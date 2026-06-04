@@ -1,238 +1,247 @@
-import pandas as pd
-import psycopg2
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
+import os
 import re
-import ipaddress
+import json
+import logging
+import traceback
 
-# =========================
-# PostgreSQL Connection
-# =========================
-conn = psycopg2.connect(
-    host="localhost",
-    database="dis_noc",
-    user="postgres",
-    password="Saif@39039"
-)
-cur = conn.cursor()
+from langchain_tcs_bfsi_genai import APIClient, Auth, TCSLLMs
 
-# =========================
-# Create Table
-# =========================
-cur.execute("""
-CREATE TABLE IF NOT EXISTS network_rules (
-    id SERIAL PRIMARY KEY,
-    source TEXT,
-    destination TEXT,
-    port_no TEXT,
-    protocol TEXT
-);
-""")
-conn.commit()
+# --- Logging ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# =========================
-# Load Excel
-# =========================
-file_path = "SOE sample (1).xlsx"
-
-df = pd.read_excel(file_path, sheet_name="One engine", header=2)
-
-# Clean column names
-df.columns = df.columns.astype(str).str.strip()
-
-# Auto-detect columns
-def find_column(df, keyword):
-    for col in df.columns:
-        if keyword in col.lower():
-            return col
-    raise Exception(f"Column containing '{keyword}' not found")
-
-source_col = find_column(df, "source")
-dest_col = find_column(df, "destination")
-port_col = find_column(df, "port")
-protocol_col = find_column(df, "protocol")
-
-print("✅ Columns:", source_col, dest_col, port_col, protocol_col)
-
-# Handle merged cells
-df[source_col] = df[source_col].replace("", pd.NA).ffill()
-df[dest_col] = df[dest_col].replace("", pd.NA).ffill()
-
-# =========================
-# Load Subnet Sheet
-# =========================
-subnet_df = pd.read_excel(
-    file_path,
-    sheet_name="Ultimatix Subnets",
-    header=[0, 1, 2]
+# Initialize FastAPI App
+app = FastAPI(
+    title="Cloud Resource Architect API",
+    description="API for the Cloud Resource Conversational Bot. Converts chat to resource recommendations.",
+    version="1.0.0"
 )
 
-# Flatten columns
-subnet_df.columns = [
-    f"{str(a).strip()}|{str(b).strip()}|{str(c).strip()}"
-    for a, b, c in subnet_df.columns
+# --- LLM Configuration ---
+LLM_USERNAME = "152459"
+LLM_PASSWORD = "Surajit@152459"
+LLM_MODEL = "gpt-4o"
+
+llm = None
+
+import urllib.request
+from openai import OpenAI
+ 
+is_proxy_enable = urllib.request.getproxies()
+if is_proxy_enable != {}:
+    ips = ['10.170.21.213','localhost','127.0.0.1','10.169.38.3', '10.169.51.2','ismartams.tcsapps.com']
+    os.environ['http_proxy'] = 'http://proxy.tcs.com:8080'
+    os.environ['https_proxy'] = 'http://proxy.tcs.com:8080'
+    os.environ['no_proxy'] = ",".join(ips)
+
+def initialize_llm():
+    """
+    Initialize TCS BFSI GenAI LLM client.
+    """
+    try:
+        if not LLM_USERNAME or not LLM_PASSWORD:
+            raise ValueError("LLM_USERNAME and LLM_PASSWORD environment variables must be set.")
+
+        client = APIClient()
+        auth = Auth(client)
+        auth.login(LLM_USERNAME, LLM_PASSWORD)
+
+        return TCSLLMs(
+            client=client,
+            model_name=LLM_MODEL
+        )
+
+    except Exception as e:
+        logger.error(f"LLM initialization failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise Exception("Exception occurred during LLM initialization") from e
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Initialize LLM once during application startup.
+    """
+    global llm
+    llm = initialize_llm()
+    logger.info("LLM initialized successfully.")
+
+
+# --- Pydantic Models ---
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="Role of the sender: 'user' or 'model'")
+    text: str = Field(..., description="The message content")
+
+
+class ChatRequest(BaseModel):
+    provider: str = Field(default="AWS", description="Cloud provider context e.g. AWS, Azure, GCP")
+    message: str = Field(..., description="The latest user message")
+    history: List[ChatMessage] = Field(default_factory=list, description="Previous conversation history")
+
+
+class ProposedResource(BaseModel):
+    service: str
+    count: int
+    configDetails: str
+
+
+class ChatResponse(BaseModel):
+    reply: str = Field(..., description="The conversational reply from the AI cleaned of JSON")
+    proposed_resources: Optional[List[ProposedResource]] = Field(
+        default_factory=list,
+        description="Parsed resource recommendations"
+    )
+
+
+# --- Helper Functions ---
+def get_system_prompt(provider: str) -> str:
+    return f"""
+You are an expert Cloud Solution Architect specializing in {provider}.
+Your goal is to help the user design their cloud infrastructure and provision the right resources.
+
+Follow these rules strictly:
+1. Have a natural, conversational interaction.
+2. Ask 1-2 clarifying questions at a time to understand their workload.
+3. Do not overwhelm the user with too many questions at once.
+4. Once you have gathered enough requirements, propose a final cloud resource configuration.
+5. IMPORTANT: When proposing the configuration, you MUST include a JSON array containing the resources.
+6. Wrap the JSON exactly in a ```json block.
+
+Schema for the JSON array:
+[
+  {{
+    "service": "Name of the cloud service",
+    "count": number,
+    "configDetails": "Specific configuration details e.g. t3.medium, Multi-AZ"
+  }}
 ]
 
-# =========================
-# Helper Functions
-# =========================
-
-def normalize(text):
-    return str(text).strip().lower().replace("-", " ").replace("_", " ")
-
-def parse_ports(val):
-    if pd.isna(val):
-        return []
-
-    result = []
-    for v in str(val).split(","):
-        v = v.strip()
-
-        if "-" in v:
-            try:
-                start, end = v.split("-")
-                result.extend([str(p) for p in range(int(start), int(end) + 1)])
-            except:
-                continue
-        elif v:
-            result.append(v)
-
-    return result
-
-
-def is_ip_or_subnet(value):
-    return bool(re.match(r"\d+\.\d+\.\d+\.\d+", str(value)))
-
-
-def expand_subnet(subnet):
-    try:
-        network = ipaddress.ip_network(subnet, strict=False)
-
-        if network.num_addresses > 1024:
-            return [subnet]
-
-        return [str(ip) for ip in network]
-    except:
-        return [subnet]
-
-
-def resolve_value(value):
-    """
-    ✅ Handles:
-    - IPs / CIDR
-    - Ultimatix groups
-    - multi-env
-    - PR / DR filter
-    - complex input formats
-    """
-    if pd.isna(value):
-        return []
-
-    value_str = str(value).strip()
-    final_list = []
-
-    parts = [v.strip() for v in value_str.split(",") if v.strip()]
-
-    # ✅ Case 1: pure IP/subnet
-    if all(is_ip_or_subnet(v) for v in parts):
-        for v in parts:
-            final_list.extend(expand_subnet(v))
-        return final_list
-
-    v_clean = normalize(value_str)
-
-    # ✅ Detect tier
-    tier = None
-    if "non prod" in v_clean:
-        tier = "non prod"
-    elif "prod" in v_clean:
-        tier = "prod"
-
-    # ✅ Detect PR / DR
-    region_filter = []
-    if "pr" in v_clean:
-        region_filter.append("pr")
-    if "dr" in v_clean:
-        region_filter.append("dr")
-
-    # ✅ Detect environments
-    envs = []
-
-    if "on prem" in v_clean:
-        envs.append("on prem")
-    if "azure" in v_clean:
-        envs.append("azure")
-    if "aws" in v_clean:
-        envs.append("aws")
-
-    # ✅ fallback parsing for comma-only formats
-    if not envs and "," in value_str:
-        for p in value_str.split(","):
-            p = p.lower()
-            if "on prem" in p:
-                envs.append("on prem")
-            elif "azure" in p:
-                envs.append("azure")
-            elif "aws" in p:
-                envs.append("aws")
-
-    if not envs or not tier:
-        return []
-
-    # ✅ fetch subnet values
-    for env in envs:
-        for col in subnet_df.columns:
-            parts = col.lower().split("|")
-
-            if len(parts) != 3:
-                continue
-
-            col_env, col_tier, col_region = parts
-
-            if env in col_env and tier in col_tier:
-
-                # ✅ apply PR/DR filtering
-                if region_filter:
-                    if not any(r in col_region for r in region_filter):
-                        continue
-
-                subnets = subnet_df[col].dropna().astype(str).tolist()
-
-                for s in subnets:
-                    final_list.extend(expand_subnet(s))
-
-    return final_list
-
-
-# =========================
-# Insert Data
-# =========================
-insert_query = """
-INSERT INTO network_rules (source, destination, port_no, protocol)
-VALUES (%s, %s, %s, %s)
+Always provide a friendly natural language explanation alongside the JSON block.
 """
 
-seen = set()
 
-for _, row in df.iterrows():
+def build_llm_prompt(request: ChatRequest) -> str:
+    """
+    Builds a single prompt string for llm.invoke().
+    Since the new LLM call uses invoke(llm_prompt), we combine:
+    - system instruction
+    - conversation history
+    - latest user message
+    """
 
-    sources = resolve_value(row[source_col])
-    destinations = resolve_value(row[dest_col])
+    system_prompt = get_system_prompt(request.provider)
 
-    ports = parse_ports(row[port_col])
-    protocol = str(row[protocol_col]).strip()
+    history_text = ""
+    if request.history:
+        history_text = "\nConversation history:\n"
+        for msg in request.history:
+            role = "User" if msg.role.lower() == "user" else "Assistant"
+            history_text += f"{role}: {msg.text}\n"
 
-    for src in sources:
-        for dst in destinations:
-            for p in ports:
+    prompt = f"""
+{system_prompt}
 
-                record = (src, dst, p, protocol)
+{history_text}
 
-                if record not in seen:
-                    seen.add(record)
-                    cur.execute(insert_query, record)
+Latest user message:
+User: {request.message}
 
-conn.commit()
+Assistant:
+"""
 
-cur.close()
-conn.close()
+    return prompt.strip()
 
-print("✅ ✅ FINAL VERSION: All scenarios handled successfully!")
+
+def extract_response_text(llm_response: Any) -> str:
+    """
+    Handles different possible response formats from LangChain-style LLMs.
+    llm.invoke() may return:
+    - string
+    - object with .content
+    - dict-like response
+    """
+
+    if isinstance(llm_response, str):
+        return llm_response
+
+    if hasattr(llm_response, "content"):
+        return llm_response.content
+
+    if isinstance(llm_response, dict):
+        if "content" in llm_response:
+            return llm_response["content"]
+        if "text" in llm_response:
+            return llm_response["text"]
+        if "response" in llm_response:
+            return llm_response["response"]
+
+    return str(llm_response)
+
+
+def extract_json_resources(text: str) -> tuple[str, List[Dict[str, Any]]]:
+    """
+    Extracts JSON resources from the LLM output and returns:
+    - cleaned natural language reply
+    - parsed resource list
+    """
+
+    json_regex = r"```json\s*(.*?)\s*```"
+    matches = re.findall(json_regex, text, re.DOTALL)
+
+    resources = []
+    clean_text = text
+
+    if matches:
+        try:
+            resources = json.loads(matches[-1])
+            clean_text = re.sub(json_regex, "", text, flags=re.DOTALL).strip()
+        except json.JSONDecodeError:
+            logger.warning("Failed to parse JSON block from LLM response.")
+
+    return clean_text, resources
+
+
+# --- Endpoints ---
+@app.post("/chat", response_model=ChatResponse, tags=["Chat"])
+async def generate_chat_response(request: ChatRequest):
+    try:
+        global llm
+
+        if llm is None:
+            llm = initialize_llm()
+
+        llm_prompt = build_llm_prompt(request)
+
+        llm_response = llm.invoke(llm_prompt)
+
+        response_text = extract_response_text(llm_response)
+
+        clean_text, resources = extract_json_resources(response_text)
+
+        return ChatResponse(
+            reply=clean_text,
+            proposed_resources=resources
+        )
+
+    except Exception as e:
+        logger.error(f"Chat generation failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    return {
+        "status": "ok",
+        "model": LLM_MODEL,
+        "llm_initialized": llm is not None
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
