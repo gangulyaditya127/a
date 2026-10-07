@@ -1,0 +1,224 @@
+While I cannot directly generate and attach a binary `.docx` file in this chat interface, I have meticulously formatted the complete API documentation below. You can simply highlight all the text, copy it, and paste it directly into a blank Microsoft Word document. It will perfectly retain all the headings, bold text, and code blocks for a clean, professional file.
+
+# SOC Resolution Recommender & DQ Check – API Documentation
+
+**Base URL:** `http://localhost:8004`
+**Content-Type:** `application/json`
+
+This document outlines the four primary endpoints used for validating and generating SOC investigation analyses and closing notes using dynamic database-driven routing.
+
+---
+
+## 1. Recommend Investigation Analysis
+
+Generates an AI-driven, Cortex XSOAR-ready investigation analysis based on the provided alert telemetry. It uses dynamic database routing to find similar historical alerts via ChromaDB and BM25 hybrid search.
+
+* **Endpoint:** `/dqCheck/recommendInvestigationAnalysis`
+* **Method:** `POST`
+
+### Request Input
+
+The payload requires the `sourceBrand`, the `Alert_details` (containing the telemetry), and an optional `investigation_analysis` draft.
+
+```json
+{
+    "sourceBrand": "CrowdstrikeFalcon",
+    "investigation_analysis": "Draft investigation notes regarding the macro execution...",
+    "Alert_details": {
+        "CrowdStrike": {
+            "Detection": {
+                "Behavior": [
+                    {
+                        "AllegedFiletype": "exe",
+                        "CommandLine": "C:\\windows\\Explorer.EXE",
+                        "Confidence": 30,
+                        "Description": "An Office file with a macro written to the file system meets the File Analysis ML algorithm's low-confidence threshold for malware.",
+                        "DisplayName": "OnWriteOfficeMacroMLLow",
+                        "FileName": "explorer.exe",
+                        "Filepath": "\\Device\\HarddiskVolume3\\Windows\\explorer.exe",
+                        "ParentProcessID": "897857097736",
+                        "ProcessID": "897860345428",
+                        "SHA256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                        "Scenario": "NGAV",
+                        "SensorID": "78e515c0f1804d4090862a33bb59b3f4",
+                        "Tactic": "Machine Learning",
+                        "TacticID": "CSTA0004",
+                        "Technique": "Cloud-based ML",
+                        "TechniqueId": "CST0008",
+                        "UserName": "01HW2428965$"
+                    }
+                ],
+                "CustomerID": "7051923e910d4b80814212ec9d6773cd",
+                "ID": "7051923e910d4b80814212ec9d6773cd:ind:78e515c0f1804d4090862a33bb59b3f4:897860345428-4778-3785744",
+                "MaxSeverity": 30,
+                "ProcessStartTime": "2026-10-06T11:12:23.728553354Z",
+                "Status": "new",
+                "System": "01HW2428965"
+            },
+            "Detections": {
+                "agent_id": "78e515c0f1804d4090862a33bb59b3f4",
+                "behaviors": {
+                    "alleged_filetype": "exe",
+                    "cmdline": "C:\\windows\\Explorer.EXE",
+                    "filename": "explorer.exe",
+                    "filepath": "\\Device\\HarddiskVolume3\\Windows\\explorer.exe",
+                    "parent_details": {
+                        "filename": "userinit.exe",
+                        "filepath": "\\Device\\HarddiskVolume3\\Windows\\System32\\userinit.exe",
+                        "parent_cmdline": "C:\\Windows\\system32\\userinit.exe",
+                        "parent_sha256": "a9434d4c7fbeeb61070820bfd8ea470ffdf95907d5c7f29b96cff6344cb8b6cb"
+                    },
+                    "sha256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                    "tactic": "Machine Learning",
+                    "technique": "Cloud-based ML"
+                },
+                "description": "An Office file with a macro written to the file system meets the File Analysis ML algorithm's low-confidence threshold for malware.",
+                "grandparent_details": {
+                    "cmdline": "winlogon.exe",
+                    "filename": "winlogon.exe",
+                    "filepath": "\\Device\\HarddiskVolume3\\Windows\\System32\\winlogon.exe",
+                    "sha256": "e2fc3b31ce2c45f33c1035549511be8fca08679353e79823f4eca38d99e2ea9f"
+                },
+                "macros": {
+                    "cmdline": "C:\\windows\\Explorer.EXE",
+                    "ioc_description": "\\Device\\HarddiskVolume3\\Users\\2531137\\Downloads\\VolkswagenID (17)\\BSW\\CDD\\ADBMS1804-CMD.xlsm",
+                    "ioc_source": "macro_script",
+                    "ioc_type": "hash_sha256",
+                    "ioc_value": "5fb0cc7b2fc332420f2f6b109aab7e3229b9632d99cca730dd7b7831f386a23c",
+                    "sha256": "3c04a0ca2ea174b6f4b00db6f3356b11fbb7089123b593c18d270840e72a986a",
+                    "type": "macro"
+                }
+            }
+        }
+    }
+}
+
+```
+
+### Response Output
+
+```json
+{
+    "success": true,
+    "investigation_recommendation": {
+        "Investigation Summary": "An alert was generated for suspicious activity associated with explorer.exe, triggered by an Office file macro. The detection was flagged by the Cloud-based ML algorithm.",
+        "Detection Context": "Detection Name: OnWriteOfficeMacroMLLow | Tactic: Machine Learning | Technique: Cloud-based ML | Confidence Level: Low",
+        "Analysis Performed": "Reviewed process lineage: winlogon.exe spawned userinit.exe, which then launched explorer.exe. Validated the macro hash (5fb0cc7b2fc332420f2f6b109aab7e3229b9632d99cca730dd7b7831f386a23c). Analyzed command-line arguments for anomalous behavior. Checked for secondary payloads or network connections.",
+        "Findings": "The process chain (winlogon.exe -> userinit.exe -> explorer.exe) is standard for Windows interactive logon. However, the presence of the macro hash triggered the low-confidence ML threshold. No further malicious activity or lateral movement was observed.",
+        "Conclusion": "The alert is considered a True Positive but with low severity. The macro was detected, but no execution or compromise occurred. Recommend isolating the host if further suspicious activity is noted."
+    }
+}
+
+```
+
+---
+
+## 2. Recommend Closing Note
+
+Generates a structured and compliant closing note suitable for XSOAR alert closure based on alert details and the analyst's draft.
+
+* **Endpoint:** `/dqCheck/recommendClosingNote`
+* **Method:** `POST`
+
+### Request Input
+
+```json
+{
+    "sourceBrand": "CrowdstrikeFalcon",
+    "closing_note": "False positive, standard logon sequence. Macro was blocked.",
+    "Alert_details": {
+        "CrowdStrike": {
+            "...": " [Same CrowdStrike Payload as Above] "
+        }
+    }
+}
+
+```
+
+### Response Output
+
+```json
+{
+    "success": true,
+    "close_note_recommendation": {
+        "Alert": "An Office file containing a macro was detected by the File Analysis ML engine during a standard user logon sequence.",
+        "Disposition": "False Positive",
+        "Impact": "No security impact. The detected process chain is expected behavior for Windows interactive logon and the macro was successfully blocked.",
+        "Actions Taken": "Reviewed process lineage (winlogon.exe -> userinit.exe -> explorer.exe). Validated the macro hash. Confirmed the activity was benign and related to normal system operations.",
+        "Closure Justification": "The alert was triggered by a low-confidence ML threshold on a standard Windows process. Analysis confirms no malicious activity or intent. The alert is closed as a False Positive."
+    }
+}
+
+```
+
+---
+
+## 3. Validate Investigation Analysis
+
+Validates an analyst's investigation write-up to ensure it accurately references the alert context and follows expected SOC formatting standards.
+
+* **Endpoint:** `/dqCheck/validateInvestigationAnalysis`
+* **Method:** `POST`
+
+### Request Input
+
+```json
+{
+    "sourceBrand": "CrowdstrikeFalcon",
+    "investigation_analysis": "The alert was triggered due to execution of an Excel macro. File hash analysis confirmed malicious behavior.",
+    "Alert_details": {
+        "CrowdStrike": {
+            "...": " [Same CrowdStrike Payload as Above] "
+        }
+    }
+}
+
+```
+
+### Response Output
+
+```json
+{
+    "classification": "RELEVANT_BUT_FORMAT_INVALID",
+    "content_relevant": true,
+    "explanation": "The Investigation Analysis references the correct alert context regarding the macro execution. However, it lacks the required structural sections (Investigation Summary, Detection Context, Analysis Performed, Findings, Conclusion).",
+    "format_valid": false
+}
+
+```
+
+---
+
+## 4. Validate Closing Note
+
+Evaluates an analyst's closing note to ensure it accurately resolves the alert and uses the proper structural headers.
+
+* **Endpoint:** `/dqCheck/validateClosingNote`
+* **Method:** `POST`
+
+### Request Input
+
+```json
+{
+    "sourceBrand": "CrowdstrikeFalcon",
+    "closing_note": "Alert: Suspicious macro execution\nDisposition: False Positive\nImpact: None\nActions Taken: Verified normal logon sequence\nClosure Justification: Expected behavior",
+    "Alert_details": {
+        "CrowdStrike": {
+            "...": " [Same CrowdStrike Payload as Above] "
+        }
+    }
+}
+
+```
+
+### Response Output
+
+```json
+{
+    "classification": "VALID",
+    "content_relevant": true,
+    "explanation": "The closing note accurately reflects the alert description regarding the macro execution and process chain. It also correctly utilizes the required structural headers (Alert, Disposition, Impact, Actions Taken, Closure Justification).",
+    "format_valid": true
+}
+
+```
