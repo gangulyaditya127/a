@@ -1,0 +1,44 @@
+CREATE TABLE IF NOT EXISTS source_configs (
+    source_brand VARCHAR(100) PRIMARY KEY,
+    chroma_collection VARCHAR(100) NOT NULL,
+    bm25_folder VARCHAR(100) NOT NULL,
+    embedding_fields JSON NOT NULL,
+    metadata_fields JSON NOT NULL,
+    query_text_mapping JSON NOT NULL,
+    search_filter_keys JSON NOT NULL
+);
+INSERT INTO source_configs (
+    source_brand,
+    chroma_collection,
+    bm25_folder,
+    embedding_fields,
+    metadata_fields,
+    query_text_mapping,
+    search_filter_keys
+) VALUES 
+(
+    'QRadar v3',
+    'historical_qradar',
+    'qradar',
+    '["CustomFields.descriptionoffense", "details", "CustomFields.offensesource", "CustomFields.lowlevelcategoriesoffense", "CustomFields.magnitudeoffense"]'::json,
+    '{"severity": "severity", "offense_source": "CustomFields.offensesource"}'::json,
+    '{}'::json,
+    '[]'::json
+),
+(
+    'CrowdstrikeFalconCrowdstrikeFalcon',
+    'historical_crowdstrike',
+    'crowdstrike',
+    '["CustomFields.description", "details", "CustomFields.crowdstriketactic", "CustomFields.crowdstriketechnique", "CustomFields.crowdstrikefilename", "CustomFields.crowdstrikecmdline", "CustomFields.csparentcmdline", "CustomFields.crowdstrikefilehash", "CustomFields.csiocvalue"]'::json,
+    '{"tactic": "CustomFields.crowdstriketactic", "severity": "severity", "closeNote": "closingnote", "technique": "CustomFields.crowdstriketechnique", "investigation_analysis": "investigationanalysis", "investigationConclusion": "investigationconclusion"}'::json,
+    '{"tactic": "payload.Detections.behaviors.tactic", "cmdline": "payload.Detections.behaviors.cmdline", "fileHash": "payload.Detections.behaviors.sha256", "filename": "payload.Detections.behaviors.filename", "ioc_type": "payload.Detections.macros.ioc_type", "ioc_value": "payload.Detections.macros.ioc_value", "technique": "payload.Detections.behaviors.technique", "description": "payload.Detections.description", "macros_details": "payload.Detections.macros", "parent_cmdline": "payload.Detections.behaviors.parent_details.parent_cmdline", "parent_filehash": "payload.Detections.behaviors.parent_details.parent_sha256", "parent_filename": "payload.Detections.behaviors.parent_details.filename", "parent_filepath": "payload.Detections.behaviors.parent_details.filepath", "grandparent_cmdline": "payload.Detections.grandparent_details.cmdline", "grandparent_filehash": "payload.Detections.grandparent_details.sha256", "grandparent_filename": "payload.Detections.grandparent_details.filename", "grandparent_filepath": "payload.Detections.grandparent_details.filepath"}'::json,
+    '["tactic", "technique"]'::json
+)
+ON CONFLICT (source_brand) DO UPDATE 
+SET 
+    chroma_collection = EXCLUDED.chroma_collection,
+    bm25_folder = EXCLUDED.bm25_folder,
+    embedding_fields = EXCLUDED.embedding_fields,
+    metadata_fields = EXCLUDED.metadata_fields,
+    query_text_mapping = EXCLUDED.query_text_mapping,
+    search_filter_keys = EXCLUDED.search_filter_keys;
