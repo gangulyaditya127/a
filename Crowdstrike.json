@@ -1,0 +1,1429 @@
+{
+    "AreValuesEqual": "yes",
+    "CreatedIndicator": {
+        "ID": "3692122",
+        "Score": 0,
+        "Type": "TCS Employee Id",
+        "Value": "01HW2428965"
+    },
+    "CrowdStrike": {
+        "Detection": {
+            "Behavior": [
+                {
+                    "AllegedFiletype": "exe",
+                    "CommandLine": "C:\\windows\\Explorer.EXE",
+                    "Confidence": 30,
+                    "Description": "An Office file with a macro written to the file system meets the File Analysis ML algorithm's low-confidence threshold for malware.",
+                    "DisplayName": "OnWriteOfficeMacroMLLow",
+                    "FileName": "explorer.exe",
+                    "Filepath": "\\Device\\HarddiskVolume3\\Windows\\explorer.exe",
+                    "ID": null,
+                    "IOCType": null,
+                    "IOCValue": null,
+                    "MD5": null,
+                    "ParentMD5": null,
+                    "ParentProcessID": "897857097736",
+                    "ParentSHA256": null,
+                    "PatternDisposition": 0,
+                    "PatternDispositionDetails": {
+                        "blocking_unsupported_or_disabled": false,
+                        "bootup_safeguard_enabled": false,
+                        "containment_file_system": false,
+                        "critical_process_disabled": false,
+                        "detect": false,
+                        "fs_operation_blocked": false,
+                        "handle_operation_downgraded": false,
+                        "inddet_mask": false,
+                        "indicator": false,
+                        "kill_action_failed": false,
+                        "kill_parent": false,
+                        "kill_process": false,
+                        "kill_subprocess": false,
+                        "mfa_required": false,
+                        "operation_blocked": false,
+                        "policy_disabled": false,
+                        "prevention_provisioning_enabled": false,
+                        "process_blocked": false,
+                        "quarantine_file": false,
+                        "quarantine_machine": false,
+                        "registry_operation_blocked": false,
+                        "response_action_already_applied": false,
+                        "response_action_failed": false,
+                        "response_action_triggered": false,
+                        "rooting": false,
+                        "sensor_only": false,
+                        "suspend_parent": false,
+                        "suspend_process": false
+                    },
+                    "ProcessID": "897860345428",
+                    "SHA256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                    "Scenario": "NGAV",
+                    "SensorID": "78e515c0f1804d4090862a33bb59b3f4",
+                    "Tactic": "Machine Learning",
+                    "TacticID": "CSTA0004",
+                    "Technique": "Cloud-based ML",
+                    "TechniqueId": "CST0008",
+                    "UserName": "01HW2428965$"
+                }
+            ],
+            "CustomerID": "7051923e910d4b80814212ec9d6773cd",
+            "ID": "7051923e910d4b80814212ec9d6773cd:ind:78e515c0f1804d4090862a33bb59b3f4:897860345428-4778-3785744",
+            "MachineDomain": "",
+            "MaxConfidence": null,
+            "MaxSeverity": 30,
+            "ProcessStartTime": "2026-10-06T11:12:23.728553354Z",
+            "ShowInUi": true,
+            "Status": "new",
+            "System": "01HW2428965"
+        },
+        "Detections": {
+            "agent_id": "78e515c0f1804d4090862a33bb59b3f4",
+            "aggregate_id": "aggind:78e515c0f1804d4090862a33bb59b3f4:811748942523",
+            "automated_triage": {
+                "advancement_probable": false,
+                "advancement_probable_confidence": 50,
+                "can_triage": true,
+                "escalation_priority": 169,
+                "is_already_handled": false,
+                "recommend_host_containment": false,
+                "triage_explanation": "This detection was labeled **inconclusive** because the process chain shown is the *standard Windows interactive logon sequence* and, by itself, doesn\u2019t provide enough evidence to determine malicious intent. `winlogon.exe` launching `userinit.exe`, which then starts `explorer.exe` (the Windows shell) is expected behavior on virtually every Windows endpoint at user sign-in, and the binaries are executing from their normal system locations (`System32` / `Windows`). At the same time, attackers commonly **abuse these same legitimate processes** for stealth (e.g., injecting code into `explorer.exe`, hijacking `userinit`/shell registry values, or using logon persistence so malicious activity begins at sign-in), so seeing this chain alone cannot be treated as definitively benign or malicious without additional context such as unusual command-line arguments, unsigned/modified binaries, suspicious child processes spawned by Explorer, anomalous network connections, or persistence artifacts.",
+                "triage_outcome": "inconclusive",
+                "triage_recommendation": "escalate",
+                "triage_source": "charlotte_triage",
+                "triage_status": "finished"
+            },
+            "behaviors": {
+                "alleged_filetype": "exe",
+                "cmdline": "C:\\windows\\Explorer.EXE",
+                "confidence": 30,
+                "control_graph_id": "ctg:78e515c0f1804d4090862a33bb59b3f4:811748942523",
+                "device_id": "78e515c0f1804d4090862a33bb59b3f4",
+                "filename": "explorer.exe",
+                "filepath": "\\Device\\HarddiskVolume3\\Windows\\explorer.exe",
+                "objective": "Falcon Detection Method",
+                "parent_details": {
+                    "filename": "userinit.exe",
+                    "filepath": "\\Device\\HarddiskVolume3\\Windows\\System32\\userinit.exe",
+                    "local_process_id": "10628",
+                    "parent_cmdline": "C:\\Windows\\system32\\userinit.exe",
+                    "parent_md5": "54d47675285d76f6baa533adefc31e3a",
+                    "parent_process_graph_id": "pid:78e515c0f1804d4090862a33bb59b3f4:897857097736",
+                    "parent_sha256": "a9434d4c7fbeeb61070820bfd8ea470ffdf95907d5c7f29b96cff6344cb8b6cb",
+                    "process_id": "897857097736",
+                    "timestamp": "2026-10-06T07:26:34Z",
+                    "user_graph_id": "uid:78e515c0f1804d4090862a33bb59b3f4:S-1-5-18",
+                    "user_id": "S-1-5-18",
+                    "user_name": "01HW2428965$"
+                },
+                "pattern_disposition": 0,
+                "pattern_disposition_details": {
+                    "blocking_unsupported_or_disabled": false,
+                    "bootup_safeguard_enabled": false,
+                    "containment_file_system": false,
+                    "critical_process_disabled": false,
+                    "detect": false,
+                    "fs_operation_blocked": false,
+                    "handle_operation_downgraded": false,
+                    "inddet_mask": false,
+                    "indicator": false,
+                    "kill_action_failed": false,
+                    "kill_parent": false,
+                    "kill_process": false,
+                    "kill_subprocess": false,
+                    "mfa_required": false,
+                    "operation_blocked": false,
+                    "policy_disabled": false,
+                    "prevention_provisioning_enabled": false,
+                    "process_blocked": false,
+                    "quarantine_file": false,
+                    "quarantine_machine": false,
+                    "registry_operation_blocked": false,
+                    "response_action_already_applied": false,
+                    "response_action_failed": false,
+                    "response_action_triggered": false,
+                    "rooting": false,
+                    "sensor_only": false,
+                    "suspend_parent": false,
+                    "suspend_process": false
+                },
+                "scenario": "NGAV",
+                "severity": 30,
+                "sha256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "tactic": "Machine Learning",
+                "technique": "Cloud-based ML",
+                "timestamp": "2026-10-06T11:11:21.598Z",
+                "triggering_process_graph_id": "pid:78e515c0f1804d4090862a33bb59b3f4:897860345428",
+                "user_id": "S-1-5-18",
+                "user_name": "01HW2428965$"
+            },
+            "cid": "7051923e910d4b80814212ec9d6773cd",
+            "cloud_indicator": "false",
+            "context_timestamp": "2026-10-06T11:11:21Z",
+            "crawled_timestamp": "2026-10-06T11:12:23.728562577Z",
+            "created_timestamp": "2026-10-06T11:12:23.728553354Z",
+            "data_domains": [
+                "Endpoint"
+            ],
+            "description": "An Office file with a macro written to the file system meets the File Analysis ML algorithm's low-confidence threshold for malware.",
+            "detection_id": "7051923e910d4b80814212ec9d6773cd:ind:78e515c0f1804d4090862a33bb59b3f4:897860345428-4778-3785744",
+            "device": {
+                "agent_load_flags": "17",
+                "agent_local_time": "2026-10-06T12:56:15.090Z",
+                "agent_version": "7.40.21309.0",
+                "bios_manufacturer": "Dell Inc.",
+                "bios_version": "1.19.1",
+                "cid": "7051923e910d4b80814212ec9d6773cd",
+                "config_id_base": "65994767",
+                "config_id_build": "21309",
+                "config_id_platform": "3",
+                "device_id": "78e515c0f1804d4090862a33bb59b3f4",
+                "external_ip": "111.125.254.212",
+                "first_seen": "2026-06-29T09:23:00Z",
+                "groups": [
+                    "3ccc82d3e06a4f36af393ba4cdcd132e"
+                ],
+                "hostinfo": {
+                    "domain": ""
+                },
+                "hostname": "01HW2428965",
+                "last_seen": "2026-10-06T10:59:36Z",
+                "local_ip": "192.168.10.4",
+                "mac_address": "6c-f6-da-f5-6e-d2",
+                "machine_domain": "",
+                "major_version": "10",
+                "minor_version": "0",
+                "modified_timestamp": "2026-10-06T10:59:45Z",
+                "os_version": "Windows 11",
+                "ou": null,
+                "platform_id": "0",
+                "platform_name": "Windows",
+                "product_type": "1",
+                "product_type_desc": "Workstation",
+                "status": "normal",
+                "system_manufacturer": "Dell Inc.",
+                "system_product_name": "Latitude 3440"
+            },
+            "display_name": "OnWriteOfficeMacroMLLow",
+            "email_sent": true,
+            "event_correlation_id": "243e46a8-76c1-f111-8ef4-f38ca583f811",
+            "falcon_host_link": "https://falcon.crowdstrike.com/activity-v2/detections/7051923e910d4b80814212ec9d6773cd:ind:78e515c0f1804d4090862a33bb59b3f4:897860345428-4778-3785744?_cid=g03000ibjkrhf6sbcsrnblcqu5mkaxpu",
+            "grandparent_details": {
+                "cmdline": "winlogon.exe",
+                "filename": "winlogon.exe",
+                "filepath": "\\Device\\HarddiskVolume3\\Windows\\System32\\winlogon.exe",
+                "local_process_id": "1284",
+                "md5": "17bbca06476d624e43c1031520791b56",
+                "process_graph_id": "pid:78e515c0f1804d4090862a33bb59b3f4:897658469393",
+                "process_id": "897658469393",
+                "sha256": "e2fc3b31ce2c45f33c1035549511be8fca08679353e79823f4eca38d99e2ea9f",
+                "timestamp": "2026-10-06T07:26:30Z",
+                "user_graph_id": "uid:78e515c0f1804d4090862a33bb59b3f4:S-1-5-18",
+                "user_id": "S-1-5-18",
+                "user_name": "01HW2428965$"
+            },
+            "has_agentic_process": false,
+            "hostinfo": {
+                "domain": ""
+            },
+            "id": "ind:78e515c0f1804d4090862a33bb59b3f4:897860345428-4778-3785744",
+            "indicator_id": "ind:78e515c0f1804d4090862a33bb59b3f4:897860345428-4778-3785744",
+            "local_process_id": "10760",
+            "logon_domain": "WORKGROUP",
+            "macros": {
+                "cmdline": "C:\\windows\\Explorer.EXE",
+                "display_name": "Module1",
+                "ioc_description": "\\Device\\HarddiskVolume3\\Users\\2531137\\Downloads\\VolkswagenID (17)\\BSW\\CDD\\ADBMS1804-CMD.xlsm",
+                "ioc_source": "macro_script",
+                "ioc_type": "hash_sha256",
+                "ioc_value": "5fb0cc7b2fc332420f2f6b109aab7e3229b9632d99cca730dd7b7831f386a23c",
+                "md5": "N/A",
+                "sha256": "3c04a0ca2ea174b6f4b00db6f3356b11fbb7089123b593c18d270840e72a986a",
+                "type": "macro"
+            },
+            "mitre_attack": [
+                {
+                    "pattern_id": 4778,
+                    "tactic": "Machine Learning",
+                    "tactic_id": "CSTA0004",
+                    "technique": "Cloud-based ML",
+                    "technique_id": "CST0008"
+                }
+            ],
+            "name": "OnWriteMacroKestrelXMLLow",
+            "origin_cid": "7051923e910d4b80814212ec9d6773cd",
+            "parent_process_id": "897857097736",
+            "pattern_disposition_description": "Detection, standard detection.",
+            "pattern_id": 4778,
+            "platform": "Windows",
+            "poly_id": "AABwUZI-kQ1LgIFCEuydZ3PNwyoP4J8buAqLyERLsP8FdQAATiE_Wrd_m4pVUHFndcJ0mSfZD7WgCpAnQCyU_QZU9xqK3Q==",
+            "prevention_policy_id": "ea8e4847e400495f9fd5aa40cc883fa6",
+            "prevention_policy_name": "platform_default",
+            "priority_details": {
+                "raw_value": 40
+            },
+            "priority_explanation": [
+                "[MOD] Detection severity: Low"
+            ],
+            "priority_value": 40,
+            "process_id": "897860345428",
+            "process_start_time": "1791271588",
+            "product": "epp",
+            "referrer_url": "C:\\Users\\2531137\\Downloads\\VolkswagenID (17).zip",
+            "seconds_to_resolved": 0,
+            "seconds_to_triaged": 0,
+            "severity_name": "Low",
+            "show_in_ui": true,
+            "source_hosts": [
+                "01HW2428965"
+            ],
+            "source_ips": [
+                "192.168.10.4"
+            ],
+            "source_products": [
+                "Falcon Insight"
+            ],
+            "source_vendors": [
+                "CrowdStrike"
+            ],
+            "status": "new",
+            "tactic_id": "CSTA0004",
+            "technique_id": "CST0008",
+            "tree_root": "897860345428",
+            "type": "ofp",
+            "updated_timestamp": "2026-10-06T11:14:26.762498559Z",
+            "user_names": [
+                "2531137@tcs.com",
+                "01HW2428965$"
+            ]
+        },
+        "Device": {
+            "ExternalIP": "111.125.254.212",
+            "FirstSeen": "2026-06-29T09:23:00Z",
+            "Hostname": "01HW2428965",
+            "ID": "78e515c0f1804d4090862a33bb59b3f4",
+            "LastSeen": "2026-10-06T10:59:36Z",
+            "LocalIP": "192.168.10.4",
+            "MacAddress": "6c-f6-da-f5-6e-d2",
+            "OS": "Windows 11",
+            "Status": "normal"
+        }
+    },
+    "DBotFindSimilarIncidents": {
+        "isSimilarIncidentFound": true,
+        "similarIncident": [
+            {
+                "created": "2026-09-30",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3411673",
+                "incident ID": "[3411673](#/Details/3411673)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-30",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3410447",
+                "incident ID": "[3410447](#/Details/3410447)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-28",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3402697",
+                "incident ID": "[3402697](#/Details/3402697)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-28",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3400924",
+                "incident ID": "[3400924](#/Details/3400924)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-25",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3393341",
+                "incident ID": "[3393341](#/Details/3393341)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-23",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3387531",
+                "incident ID": "[3387531](#/Details/3387531)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-21",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3379346",
+                "incident ID": "[3379346](#/Details/3379346)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-17",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3368750",
+                "incident ID": "[3368750](#/Details/3368750)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-09-11",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3350347",
+                "incident ID": "[3350347](#/Details/3350347)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-08-04",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3236765",
+                "incident ID": "[3236765](#/Details/3236765)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-07-16",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3176783",
+                "incident ID": "[3176783](#/Details/3176783)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            },
+            {
+                "created": "2026-07-01",
+                "crowdstrikehostname": "01HW2428965",
+                "id": "3138592",
+                "incident ID": "[3138592](#/Details/3138592)",
+                "name": "01HW2428965 - Machine Learning - Cloud-based ML - explorer.exe - CORP",
+                "similarity incident": 1
+            }
+        ]
+    },
+    "DBotScore": [
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Reliability": "B - Usually reliable",
+            "Score": 0,
+            "Type": "file",
+            "Vendor": "Recorded Future v2"
+        },
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Reliability": "C - Fairly reliable",
+            "Score": 0,
+            "Type": "file",
+            "Vendor": "VirusTotal (API v3)"
+        },
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "file",
+            "Vendor": "GoogleThreatIntelligence"
+        },
+        {
+            "Indicator": "ed724f3c0d9c5815e5f82308050a5742",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "hash",
+            "Vendor": "VirusTotal"
+        },
+        {
+            "Indicator": "ed724f3c0d9c5815e5f82308050a5742",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "file",
+            "Vendor": "VirusTotal"
+        },
+        {
+            "Indicator": "3dd0bd41a79b3875aaca1a0cd2d34c3267a16740",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "hash",
+            "Vendor": "VirusTotal"
+        },
+        {
+            "Indicator": "3dd0bd41a79b3875aaca1a0cd2d34c3267a16740",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "file",
+            "Vendor": "VirusTotal"
+        },
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "hash",
+            "Vendor": "VirusTotal"
+        },
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Reliability": "C - Fairly reliable",
+            "Score": 1,
+            "Type": "file",
+            "Vendor": "VirusTotal"
+        },
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Message": "No results found.",
+            "Reliability": "C - Fairly reliable",
+            "Score": 0,
+            "Type": "file",
+            "Vendor": "AlienVault OTX v2"
+        },
+        {
+            "Indicator": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Reliability": "B - Usually reliable",
+            "Score": 1,
+            "Type": "file",
+            "Vendor": "WildFire-v2"
+        }
+    ],
+    "Endpoint": {
+        "Hostname": "01HW2428965",
+        "ID": "78e515c0f1804d4090862a33bb59b3f4",
+        "IPAddress": "192.168.10.4",
+        "MACAddress": "6c-f6-da-f5-6e-d2",
+        "OS": "Windows",
+        "OSVersion": "Windows 11",
+        "Status": "Online",
+        "Vendor": "CrowdStrike Falcon"
+    },
+    "ExtractedIndicators": {
+        "File": [
+            "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54"
+        ],
+        "File_SHA256": [
+            "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54"
+        ]
+    },
+    "File": {
+        "Company": "Microsoft Corporation",
+        "DetectionEngines": 71,
+        "DigitalSignature": {
+            "Published": "Microsoft Windows"
+        },
+        "Extension": "exe",
+        "Hashes": [
+            {
+                "type": "MD5",
+                "value": "ed724f3c0d9c5815e5f82308050a5742"
+            },
+            {
+                "type": "SHA1",
+                "value": "3dd0bd41a79b3875aaca1a0cd2d34c3267a16740"
+            },
+            {
+                "type": "SHA256",
+                "value": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54"
+            }
+        ],
+        "MD5": "ed724f3c0d9c5815e5f82308050a5742",
+        "Name": "EXPLORER.EXE",
+        "PositiveDetections": 0,
+        "ProductName": "Microsoft\u00ae Windows\u00ae Operating System",
+        "Relationships": [
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "0a3a9cbc243fc02d6efa0ad35ab1349ce4d17f86926932a637d3db4c44ca55cf",
+                "EntityBType": "File",
+                "Relationship": "executed-by"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "0ea136103f490b45d578e9a9cb46e35eac9512c04a25a7ad42acc646ed1b0eef",
+                "EntityBType": "File",
+                "Relationship": "executed-by"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "92.223.96.6",
+                "EntityBType": "IP",
+                "Relationship": "communicates-with"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "cl-glcb907925.globalcdn.co",
+                "EntityBType": "Domain",
+                "Relationship": "communicates-with"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "34ac55b23b6d840cc9fa8304c0149b8bb026d817b39610728092878d634a61eb",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "91195029e3860e64fa844853417327e5b5f9c3d60234ca0050662388c84bae57",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "7d585f938d610bd2f07e6a85adf986907e24b47b8f5cd9a6d2cf4530d150a2ff",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "80b21e6f70524efd84037a4eda479ddc4bc55c0d6c1a33439b85a554e740f30c",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "841c35e7dabb0e797b55eeb7f14de9f42a1f0d138cf82caeb1747d3dc9316571",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "134b30b492f154533cbc707f3c7d89e0f0cd7987429d31241b7274523957a2f4",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "321594478fdcf77015c1c43e68e0da3fb12e249f91b3ebf1d598d7d1a9b9e4be",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "222dd98bfec71fba424d8c4d72ad0501a0826c833fde597c96c6f67b4ff76037",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "cceaa226bd72eefe8bf5a3ac4087759fe0ddc458589fe4c8b205886879e8be53",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "b11d029341d80d6663de23b0b43bc4d1a8ed761356dce20fa7ef07cc92c3a0b6",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "ef510930773d6e2eca3ee9c6edf787b4609fcf8ba737d84f54bbb6f6ec348548",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "da10ba77419cbe96b1b5aa637af0a18d64573cf2e9a6940bdb54830f021ee5c9",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "91c57066b3908150c405e34e8ebacfe69e60c33a6689bb76f516b3f97d5aa282",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "01d2538b33a7f1ec8b80f176b0aa6203a19e0342195ad0e9ff956fded4e56ded",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "28bdefe447bf90948205e702fd8d2c3dd4e03275a7c4b2d380e9f76ad54e2268",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "b4489fa51f5f0401422d9a31209136039cfe676c13b287bb77676c968088b8c1",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "a5cc5db607da616d294162f421c53bd7d1814d2be935c54bc04659099834e9eb",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "e02c74d4ac47500dd1f9dac710499fae207a539b8f9df3d8ad5a70d11d98d94b",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "f148488dc2762b08cf23d9530719533b6930283745c114a7c29ad18b57978625",
+                "EntityBType": "File",
+                "Relationship": "similar-to"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "0ea136103f490b45d578e9a9cb46e35eac9512c04a25a7ad42acc646ed1b0eef",
+                "EntityBType": "File",
+                "Relationship": "bundled-in"
+            },
+            {
+                "EntityA": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "EntityAType": "File",
+                "EntityB": "0a3a9cbc243fc02d6efa0ad35ab1349ce4d17f86926932a637d3db4c44ca55cf",
+                "EntityBType": "File",
+                "Relationship": "bundled-in"
+            }
+        ],
+        "SHA1": "3dd0bd41a79b3875aaca1a0cd2d34c3267a16740",
+        "SHA256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+        "SSDeep": "49152:0hnZqjY9wdNu62R9d/aferCrIbKgeyGlcojp5T/X2Ebw8A7/eFw1/:InZCdqnd0Gojbw8a0C",
+        "Signature": {
+            "Authentihash": "dc61ac59537e55b252cd2f5b4d8f329de985031f3923ac40f8c848eca491a002",
+            "Copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+            "Description": "Windows Explorer",
+            "FileVersion": "10.0.26100.9444 (WinBuild.160101.0800)",
+            "InternalName": "explorer",
+            "OriginalName": "EXPLORER.EXE"
+        },
+        "Size": "3389784",
+        "Tags": [
+            "peexe",
+            "overlay",
+            "signed",
+            "64bits"
+        ],
+        "Type": "PE64",
+        "VirusTotal": {
+            "ScanID": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54-1791165945",
+            "vtLink": "https://www.virustotal.com/gui/file/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/detection/f-87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54-1791165945"
+        }
+    },
+    "GoogleThreatIntelligence": {
+        "File": {
+            "attributes": {
+                "authentihash": "dc61ac59537e55b252cd2f5b4d8f329de985031f3923ac40f8c848eca491a002",
+                "available_tools": [
+                    "sigcheck"
+                ],
+                "creation_date": 66505076,
+                "detectiteasy": {
+                    "filetype": "PE64",
+                    "values": [
+                        {
+                            "info": "C",
+                            "name": "Microsoft Visual C/C++",
+                            "type": "Compiler",
+                            "version": "19.36.33145"
+                        },
+                        {
+                            "name": "Microsoft Linker",
+                            "type": "Linker",
+                            "version": "14.36.33145"
+                        },
+                        {
+                            "name": "Visual Studio",
+                            "type": "Tool",
+                            "version": "2022 version 17.6"
+                        },
+                        {
+                            "info": "PKCS #7",
+                            "name": "Windows Authenticode",
+                            "type": "Sign tool",
+                            "version": "2.0"
+                        }
+                    ]
+                },
+                "downloadable": true,
+                "exiftool": {
+                    "CharacterSet": "Unicode",
+                    "CodeSize": "2093056",
+                    "CompanyName": "Microsoft Corporation",
+                    "EntryPoint": "0xa89c0",
+                    "FileDescription": "Windows Explorer",
+                    "FileFlagsMask": "0x003f",
+                    "FileOS": "Windows NT 32-bit",
+                    "FileSubtype": "0",
+                    "FileType": "Win64 EXE",
+                    "FileTypeExtension": "exe",
+                    "FileVersion": "10.0.26100.9444 (WinBuild.160101.0800)",
+                    "FileVersionNumber": "10.0.26100.9444",
+                    "ImageFileCharacteristics": "Executable, Large address aware",
+                    "ImageVersion": "10.0",
+                    "InitializedDataSize": "1273856",
+                    "InternalName": "explorer",
+                    "LanguageCode": "English (U.S.)",
+                    "LegalCopyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+                    "LinkerVersion": "14.38",
+                    "MIMEType": "application/octet-stream",
+                    "MachineType": "AMD AMD64",
+                    "OSVersion": "10.0",
+                    "ObjectFileType": "Executable application",
+                    "OriginalFileName": "EXPLORER.EXE",
+                    "PEType": "PE32+",
+                    "ProductName": "Microsoft\u00ae Windows\u00ae Operating System",
+                    "ProductVersion": "10.0.26100.9444",
+                    "ProductVersionNumber": "10.0.26100.9444",
+                    "Subsystem": "Windows GUI",
+                    "SubsystemVersion": "10.0",
+                    "TimeStamp": "1972:02:09 17:37:56+00:00",
+                    "UninitializedDataSize": "4096"
+                },
+                "filecondis": {
+                    "dhash": "00003c1e1e1f0904",
+                    "raw_md5": "782f7038a4f5a635f35886056581f76f"
+                },
+                "first_submission_date": 1788888539,
+                "gti_assessment": {
+                    "contributing_factors": {
+                        "gti_confidence_score": 0
+                    },
+                    "description": "This file is considered benign because it is signed by a trusted publisher.",
+                    "severity": {
+                        "value": "SEVERITY_NONE"
+                    },
+                    "threat_score": {
+                        "value": 0
+                    },
+                    "verdict": {
+                        "value": "VERDICT_BENIGN"
+                    }
+                },
+                "last_analysis_date": 1791041913,
+                "last_analysis_stats": {
+                    "confirmed-timeout": 0,
+                    "failure": 0,
+                    "harmless": 0,
+                    "malicious": 0,
+                    "suspicious": 0,
+                    "timeout": 0,
+                    "type-unsupported": 4,
+                    "undetected": 72
+                },
+                "last_modification_date": 1791054618,
+                "last_submission_date": 1791053515,
+                "magic": "PE32+ executable (GUI) x86-64, for MS Windows",
+                "magika": "PEBIN",
+                "main_icon": {
+                    "dhash": "0001c0011df03f3f",
+                    "raw_md5": "b683c009b0509fe33c6d1f3f1556c151"
+                },
+                "md5": "ed724f3c0d9c5815e5f82308050a5742",
+                "meaningful_name": "EXPLORER.EXE",
+                "names": [
+                    "C:\\Windows\\explorer.exe",
+                    "C:\\\\Windows\\\\explorer.exe",
+                    "C:\\WINDOWS\\explorer.exe",
+                    "unknown",
+                    "c:\\windows\\explorer.exe",
+                    "explorer.exe",
+                    "C:\\windows\\explorer.exe",
+                    "C:\\\\WINDOWS\\\\explorer.exe",
+                    "C:Windowsexplorer.exe",
+                    "explorer",
+                    "EXPLORER.EXE",
+                    "C:\\WINDOWS\\Explorer.exe",
+                    "c:\\\\windows\\\\explorer.exe",
+                    "C:\\Windows\\Explorer.exe",
+                    "C:\\Windows\\Explorer.EXE",
+                    "C:\\Users\\user\\AppData\\Local\\Temp\\qiyrj4tn.k32\\explorer.exe",
+                    "C:\\\\windows\\\\explorer.exe",
+                    "C:\\WINDOWS\\Explorer.EXE",
+                    "D:\\Windows\\explorer.exe",
+                    "C:\\WINDOWS\\EXPLORER.EXE",
+                    "C:\\6y0a1\\cq6jh5n\\84j8n.exe",
+                    "C:\\dnek1\\d8fws47\\oc4l8.exe",
+                    "C:\\Users\\user\\AppData\\Local\\Temp\\u5vflete.zr2\\explorer.exe",
+                    "C:\\Windows\\EXPLORER.EXE",
+                    "C:\\Program Files (x86)\\GBb22c4FG1\\WK8wSkMoI9\\c49FiT3i\\8x5cqVW1.exe",
+                    "C:\\Program Files (x86)\\X4j9NtQiHR\\YZvpxNG7Zx\\6DINoSQn\\81qZjErz.exe",
+                    "Explorer.EXE",
+                    "C:\\Windows\\mxt5a0.exe"
+                ],
+                "reputation": 0,
+                "sha1": "3dd0bd41a79b3875aaca1a0cd2d34c3267a16740",
+                "sha256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                "signature_info": {
+                    "copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+                    "counter signers": "Microsoft Time-Stamp Service; Microsoft Time-Stamp PCA 2010; Microsoft Root Certificate Authority 2010",
+                    "counter signers details": [
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Time-Stamp PCA 2010",
+                            "name": "Microsoft Time-Stamp Service",
+                            "serial number": "33 00 00 02 13 B0 43 35 66 CF AF 95 E8 00 01 00 00 02 13",
+                            "status": "Valid",
+                            "thumbprint": "98113C4828F182369C9B2F3F544764ECDC6947A6",
+                            "valid from": "06:48 PM 08/14/2025",
+                            "valid to": "06:48 PM 11/13/2026",
+                            "valid usage": "Timestamp Signing"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Root Certificate Authority 2010",
+                            "name": "Microsoft Time-Stamp PCA 2010",
+                            "serial number": "33 00 00 00 15 C5 E7 6B 9E 02 9B 49 99 00 00 00 00 00 15",
+                            "status": "Valid",
+                            "thumbprint": "36056A5662DCADECF82CC14C8B80EC5E0BCC59A6",
+                            "valid from": "06:22 PM 09/30/2021",
+                            "valid to": "06:32 PM 09/30/2030",
+                            "valid usage": "Timestamp Signing"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Root Certificate Authority 2010",
+                            "name": "Microsoft Root Certificate Authority 2010",
+                            "serial number": "28 CC 3A 25 BF BA 44 AC 44 9A 9B 58 6B 43 39 AA",
+                            "status": "Valid",
+                            "thumbprint": "3B1EFD3A66EA28B16697394703A72CA340A05BD5",
+                            "valid from": "09:57 PM 06/23/2010",
+                            "valid to": "10:04 PM 06/23/2035",
+                            "valid usage": "All"
+                        }
+                    ],
+                    "description": "Windows Explorer",
+                    "file version": "10.0.26100.9444 (WinBuild.160101.0800)",
+                    "internal name": "explorer",
+                    "original name": "EXPLORER.EXE",
+                    "pkcs7": {
+                        "opusinfo": [
+                            {
+                                "moreInfo": "http://www.microsoft.com/windows",
+                                "programName": "Microsoft Windows"
+                            }
+                        ]
+                    },
+                    "product": "Microsoft\u00ae Windows\u00ae Operating System",
+                    "signers": "Microsoft Windows; Microsoft Windows Production PCA 2011; Microsoft Root Certificate Authority 2010",
+                    "signers details": [
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Windows Production PCA 2011",
+                            "name": "Microsoft Windows",
+                            "serial number": "33 00 00 05 9B 7A BC 51 A1 9E 71 24 18 00 00 00 00 05 9B",
+                            "status": "Valid",
+                            "thumbprint": "DC91E564D5BC1E3A8E02D6A8508682ABEA8A2443",
+                            "valid from": "07:09 PM 04/16/2026",
+                            "valid to": "07:09 PM 10/17/2026",
+                            "valid usage": "NT5 Crypto, Code Signing"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Root Certificate Authority 2010",
+                            "name": "Microsoft Windows Production PCA 2011",
+                            "serial number": "61 07 76 56 00 00 00 00 00 08",
+                            "status": "Valid",
+                            "thumbprint": "580A6F4CC4E4B669B9EBDC1B2B3E087B80D0678D",
+                            "valid from": "06:41 PM 10/19/2011",
+                            "valid to": "06:51 PM 10/19/2026",
+                            "valid usage": "All"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Root Certificate Authority 2010",
+                            "name": "Microsoft Root Certificate Authority 2010",
+                            "serial number": "28 CC 3A 25 BF BA 44 AC 44 9A 9B 58 6B 43 39 AA",
+                            "status": "Valid",
+                            "thumbprint": "3B1EFD3A66EA28B16697394703A72CA340A05BD5",
+                            "valid from": "09:57 PM 06/23/2010",
+                            "valid to": "10:04 PM 06/23/2035",
+                            "valid usage": "All"
+                        }
+                    ],
+                    "signing date": "08:53 AM 09/04/2026",
+                    "verified": "Signed",
+                    "x509": [
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Windows Production PCA 2011",
+                            "name": "Microsoft Windows",
+                            "serial number": "33 00 00 05 9B 7A BC 51 A1 9E 71 24 18 00 00 00 00 05 9B",
+                            "thumbprint": "DC91E564D5BC1E3A8E02D6A8508682ABEA8A2443",
+                            "thumbprint_md5": "2368FD3DE1D4EB428DD54B30FA5E52CC",
+                            "thumbprint_sha256": "3F069B40083185292BC236DBE97B21E0BE81BAC58935C5C1534005845987C639",
+                            "valid from": "2026-04-16 19:09:15",
+                            "valid to": "2026-10-17 19:09:15",
+                            "valid usage": "0.4.1.311.10.3, Code Signing"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Root Certificate Authority 2010",
+                            "name": "Microsoft Windows Production PCA 2011",
+                            "serial number": "61 07 76 56 00 00 00 00 00 08",
+                            "thumbprint": "580A6F4CC4E4B669B9EBDC1B2B3E087B80D0678D",
+                            "thumbprint_md5": "AF749A216C00C7D25C249FCA0D7FD471",
+                            "thumbprint_sha256": "E8E95F0733A55E8BAD7BE0A1413EE23C51FCEA64B3C8FA6A786935FDDCC71961",
+                            "valid from": "2011-10-19 18:41:42",
+                            "valid to": "2026-10-19 18:51:42"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Time-Stamp PCA 2010",
+                            "name": "Microsoft Time-Stamp Service",
+                            "serial number": "33 00 00 02 13 B0 43 35 66 CF AF 95 E8 00 01 00 00 02 13",
+                            "thumbprint": "98113C4828F182369C9B2F3F544764ECDC6947A6",
+                            "thumbprint_md5": "9C010A782B1513EECE2B62EF53B29620",
+                            "thumbprint_sha256": "CCE1096D148533F09E038C0CCFE27568759BD0C581A579421FA7CE8E6B9C5868",
+                            "valid from": "2025-08-14 18:48:17",
+                            "valid to": "2026-11-13 18:48:17",
+                            "valid usage": "ff"
+                        },
+                        {
+                            "algorithm": "sha256RSA",
+                            "cert issuer": "Microsoft Root Certificate Authority 2010",
+                            "name": "Microsoft Time-Stamp PCA 2010",
+                            "serial number": "33 00 00 00 15 C5 E7 6B 9E 02 9B 49 99 00 00 00 00 00 15",
+                            "thumbprint": "36056A5662DCADECF82CC14C8B80EC5E0BCC59A6",
+                            "thumbprint_md5": "F8000EF37A54CE55A45F632293786351",
+                            "thumbprint_sha256": "EBEC1EDD9E140D9C105CC62B15A915C5443DDC514A35E5773C09AFB0274C7BA5",
+                            "valid from": "2021-09-30 18:22:25",
+                            "valid to": "2030-09-30 18:32:25",
+                            "valid usage": "Timestamp Signing"
+                        }
+                    ]
+                },
+                "size": 3389784,
+                "ssdeep": "49152:0hnZqjY9wdNu62R9d/aferCrIbKgeyGlcojp5T/X2Ebw8A7/eFw1/:InZCdqnd0Gojbw8a0C",
+                "tags": [
+                    "peexe",
+                    "overlay",
+                    "signed",
+                    "64bits"
+                ],
+                "threat_severity": {
+                    "last_analysis_date": "1788888564",
+                    "level_description": "No severity score data",
+                    "threat_severity_data": {},
+                    "threat_severity_level": "SEVERITY_NONE",
+                    "version": 5
+                },
+                "times_submitted": 268,
+                "tlsh": "T12BF58C5923F840C4E17AC17CC9468B16EA713C29433166DB0660FA7D6F37AE8993EF52",
+                "total_votes": {
+                    "harmless": 0,
+                    "malicious": 0
+                },
+                "trid": [
+                    {
+                        "file_type": "Win64 Executable (generic)",
+                        "probability": 37
+                    },
+                    {
+                        "file_type": "Win16 NE executable (generic)",
+                        "probability": 28.6
+                    },
+                    {
+                        "file_type": "OS/2 Executable (generic)",
+                        "probability": 11.5
+                    },
+                    {
+                        "file_type": "Generic Win/DOS Executable",
+                        "probability": 11.3
+                    },
+                    {
+                        "file_type": "DOS Executable (generic)",
+                        "probability": 11.3
+                    }
+                ],
+                "type_description": "Win32 EXE",
+                "type_extension": "exe",
+                "type_tag": "peexe",
+                "type_tags": [
+                    "executable",
+                    "windows",
+                    "win32",
+                    "pe",
+                    "peexe"
+                ],
+                "unique_sources": 214,
+                "vhash": "036096661c055d156d1567zf1z32z2b3z61z700210301491z1az1"
+            },
+            "id": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "links": {
+                "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54"
+            },
+            "relationships": {
+                "carbonblack_children": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/carbonblack_children",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/carbonblack_children?limit=20"
+                    }
+                },
+                "carbonblack_parents": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/carbonblack_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/carbonblack_parents?limit=20"
+                    }
+                },
+                "compressed_parents": {
+                    "data": [
+                        {
+                            "id": "0ea136103f490b45d578e9a9cb46e35eac9512c04a25a7ad42acc646ed1b0eef",
+                            "type": "file"
+                        },
+                        {
+                            "id": "0a3a9cbc243fc02d6efa0ad35ab1349ce4d17f86926932a637d3db4c44ca55cf",
+                            "type": "file"
+                        }
+                    ],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/compressed_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/compressed_parents?limit=20"
+                    }
+                },
+                "contacted_domains": {
+                    "data": [
+                        {
+                            "id": "cl-glcb907925.globalcdn.co",
+                            "type": "domain"
+                        }
+                    ],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/contacted_domains",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/contacted_domains?limit=20"
+                    }
+                },
+                "contacted_ips": {
+                    "data": [
+                        {
+                            "id": "92.223.96.6",
+                            "type": "ip_address"
+                        }
+                    ],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/contacted_ips",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/contacted_ips?limit=20"
+                    }
+                },
+                "contacted_urls": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/contacted_urls",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/contacted_urls?limit=20"
+                    }
+                },
+                "dropped_files": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/dropped_files",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/dropped_files?limit=20"
+                    }
+                },
+                "email_attachments": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/email_attachments",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/email_attachments?limit=20"
+                    }
+                },
+                "email_parents": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/email_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/email_parents?limit=20"
+                    }
+                },
+                "embedded_domains": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/embedded_domains",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/embedded_domains?limit=20"
+                    }
+                },
+                "embedded_ips": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/embedded_ips",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/embedded_ips?limit=20"
+                    }
+                },
+                "embedded_urls": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/embedded_urls",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/embedded_urls?limit=20"
+                    }
+                },
+                "execution_parents": {
+                    "data": [
+                        {
+                            "id": "0a3a9cbc243fc02d6efa0ad35ab1349ce4d17f86926932a637d3db4c44ca55cf",
+                            "type": "file"
+                        },
+                        {
+                            "id": "0ea136103f490b45d578e9a9cb46e35eac9512c04a25a7ad42acc646ed1b0eef",
+                            "type": "file"
+                        }
+                    ],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/execution_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/execution_parents?limit=20"
+                    }
+                },
+                "itw_domains": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/itw_domains",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/itw_domains?limit=20"
+                    }
+                },
+                "itw_ips": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/itw_ips",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/itw_ips?limit=20"
+                    }
+                },
+                "overlay_children": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/overlay_children",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/overlay_children?limit=20"
+                    }
+                },
+                "overlay_parents": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/overlay_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/overlay_parents?limit=20"
+                    }
+                },
+                "pcap_children": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/pcap_children",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/pcap_children?limit=20"
+                    }
+                },
+                "pcap_parents": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/pcap_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/pcap_parents?limit=20"
+                    }
+                },
+                "pe_resource_children": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/pe_resource_children",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/pe_resource_children?limit=20"
+                    }
+                },
+                "pe_resource_parents": {
+                    "data": [],
+                    "links": {
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/pe_resource_parents",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/pe_resource_parents?limit=20"
+                    }
+                },
+                "similar_files": {
+                    "data": [
+                        {
+                            "id": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+                            "type": "file"
+                        },
+                        {
+                            "id": "34ac55b23b6d840cc9fa8304c0149b8bb026d817b39610728092878d634a61eb",
+                            "type": "file"
+                        },
+                        {
+                            "id": "91195029e3860e64fa844853417327e5b5f9c3d60234ca0050662388c84bae57",
+                            "type": "file"
+                        },
+                        {
+                            "id": "7d585f938d610bd2f07e6a85adf986907e24b47b8f5cd9a6d2cf4530d150a2ff",
+                            "type": "file"
+                        },
+                        {
+                            "id": "80b21e6f70524efd84037a4eda479ddc4bc55c0d6c1a33439b85a554e740f30c",
+                            "type": "file"
+                        },
+                        {
+                            "id": "841c35e7dabb0e797b55eeb7f14de9f42a1f0d138cf82caeb1747d3dc9316571",
+                            "type": "file"
+                        },
+                        {
+                            "id": "134b30b492f154533cbc707f3c7d89e0f0cd7987429d31241b7274523957a2f4",
+                            "type": "file"
+                        },
+                        {
+                            "id": "321594478fdcf77015c1c43e68e0da3fb12e249f91b3ebf1d598d7d1a9b9e4be",
+                            "type": "file"
+                        },
+                        {
+                            "id": "222dd98bfec71fba424d8c4d72ad0501a0826c833fde597c96c6f67b4ff76037",
+                            "type": "file"
+                        },
+                        {
+                            "id": "cceaa226bd72eefe8bf5a3ac4087759fe0ddc458589fe4c8b205886879e8be53",
+                            "type": "file"
+                        },
+                        {
+                            "id": "b11d029341d80d6663de23b0b43bc4d1a8ed761356dce20fa7ef07cc92c3a0b6",
+                            "type": "file"
+                        },
+                        {
+                            "id": "ef510930773d6e2eca3ee9c6edf787b4609fcf8ba737d84f54bbb6f6ec348548",
+                            "type": "file"
+                        },
+                        {
+                            "id": "da10ba77419cbe96b1b5aa637af0a18d64573cf2e9a6940bdb54830f021ee5c9",
+                            "type": "file"
+                        },
+                        {
+                            "id": "91c57066b3908150c405e34e8ebacfe69e60c33a6689bb76f516b3f97d5aa282",
+                            "type": "file"
+                        },
+                        {
+                            "id": "01d2538b33a7f1ec8b80f176b0aa6203a19e0342195ad0e9ff956fded4e56ded",
+                            "type": "file"
+                        },
+                        {
+                            "id": "28bdefe447bf90948205e702fd8d2c3dd4e03275a7c4b2d380e9f76ad54e2268",
+                            "type": "file"
+                        },
+                        {
+                            "id": "b4489fa51f5f0401422d9a31209136039cfe676c13b287bb77676c968088b8c1",
+                            "type": "file"
+                        },
+                        {
+                            "id": "a5cc5db607da616d294162f421c53bd7d1814d2be935c54bc04659099834e9eb",
+                            "type": "file"
+                        },
+                        {
+                            "id": "e02c74d4ac47500dd1f9dac710499fae207a539b8f9df3d8ad5a70d11d98d94b",
+                            "type": "file"
+                        },
+                        {
+                            "id": "f148488dc2762b08cf23d9530719533b6930283745c114a7c29ad18b57978625",
+                            "type": "file"
+                        }
+                    ],
+                    "links": {
+                        "next": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/similar_files?limit=20&cursor=CngKDwoCbHMSCQi82ZiqrtqWAxJhahFzfnZpcnVzdG90YWxjbG91ZHJMCxIGU2FtcGxlIkBmMTQ4NDg4ZGMyNzYyYjA4Y2YyM2Q5NTMwNzE5NTMzYjY5MzAyODM3NDVjMTE0YTdjMjlhZDE4YjU3OTc4NjI1DBgAIAE%3D",
+                        "related": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/similar_files",
+                        "self": "https://www.virustotal.com/api/v3/files/87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54/relationships/similar_files?limit=20"
+                    },
+                    "meta": {
+                        "cursor": "CngKDwoCbHMSCQi82ZiqrtqWAxJhahFzfnZpcnVzdG90YWxjbG91ZHJMCxIGU2FtcGxlIkBmMTQ4NDg4ZGMyNzYyYjA4Y2YyM2Q5NTMwNzE5NTMzYjY5MzAyODM3NDVjMTE0YTdjMjlhZDE4YjU3OTc4NjI1DBgAIAE="
+                    }
+                }
+            },
+            "type": "file"
+        }
+    },
+    "InfoFile": {
+        "EntryID": "52@3443537",
+        "Extension": "json",
+        "Info": "application/json",
+        "Name": "full_context.json",
+        "Size": 160327,
+        "Type": "ASCII text, with very long lines"
+    },
+    "OrignalSeverity": 1,
+    "Please Click The 'Lets Get Started!' Button To Stop The Acknowledgement SLA Timer": {
+        "Links": {
+            "0": {
+                "link": "https://soar.tcsapps.com:443#/external/form/4d7a51304d7a557a4e3041794e773d3d/6457357a6347566a61575a705a57513d",
+                "taskID": "27",
+                "taskName": "Please Click The 'Lets Get Started!' Button To Stop The Response SLA Timer"
+            }
+        },
+        "Questions": {
+            "0": "Have You Completed This Task"
+        }
+    },
+    "RecordedFuture": {
+        "File": {
+            "Evidence": [
+                {
+                    "description": "1 sighting on 1 source: <e id=report:oJewMx>Recently Viewed Integrations Indicators</e>. Observed in the wild by Recorded Future Telemetry.",
+                    "level": 1,
+                    "rule": "Observed in the Wild by Recorded Future Telemetry",
+                    "ruleid": "observedTelemetry",
+                    "timestamp": "2026-10-02 18:10:25"
+                }
+            ],
+            "description": "",
+            "id": "hash:87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "maxRules": 17,
+            "name": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "riskLevel": 1,
+            "riskScore": 5,
+            "ruleCount": 1,
+            "rules": "Observed in the Wild by Recorded Future Telemetry"
+        }
+    },
+    "UserByUsername": {
+        "email": "g.bastian@tcs.com",
+        "isAway": false,
+        "name": "Georgey Bastian",
+        "phone": "2162307@TCS.com",
+        "prettyRoles": [
+            "Second-Shift",
+            "Operator"
+        ],
+        "roles": [
+            "demisto: [Second-Shift Operator]"
+        ],
+        "username": "Georgey Bastian"
+    },
+    "WildFire": {
+        "Report": {
+            "SHA256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+            "Status": "Success"
+        }
+    },
+    "created": "Yes",
+    "foundIndicators": {
+        "id": "2977537",
+        "indicator_type": "CSOC Analyst",
+        "score": 0,
+        "supervisor": "Prashant Matle",
+        "value": "Georgey Bastian",
+        "verdict": "Unknown"
+    }
+}
